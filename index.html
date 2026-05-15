@@ -1,1242 +1,1833 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LUMEN — Premium Recoil Control</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <style>
-        :root {
-            --bg: #0a0a0f;
-            --bg-secondary: #12121a;
-            --primary: #ffffff;
-            --secondary: #a0a0b0;
-            --accent: #6366f1;
-            --accent-2: #8b5cf6;
-            --font-main: 'Outfit', sans-serif;
-            --font-heading: 'Outfit', sans-serif;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            background: var(--bg);
-            color: var(--primary);
-            font-family: var(--font-main);
-            font-weight: 500;
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-            cursor: none !important;
-        }
-
-        .lumen-app {
-            position: relative;
-            background: var(--bg);
-            color: var(--primary);
-            min-height: 100vh;
-            font-weight: 500;
-        }
-
-        .bg-gif {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            z-index: -2;
-            pointer-events: none;
-        }
-
-        /* ===================== NOISE ===================== */
-        .noise-layer {
-            position: fixed;
-            inset: 0;
-            z-index: 9997;
-            pointer-events: none;
-            opacity: 0.03;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-        }
-
-        .scanlines {
-            position: fixed;
-            inset: 0;
-            z-index: 9996;
-            pointer-events: none;
-            background: repeating-linear-gradient(
-                to bottom,
-                transparent 0,
-                transparent 2px,
-                rgba(255, 255, 255, 0.01) 2px,
-                rgba(255, 255, 255, 0.01) 3px
-            );
-        }
-
-        .grid-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: -1;
-            pointer-events: none;
-            background-image: linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
-            background-size: 80px 80px;
-        }
-
-        .vignette {
-            position: fixed;
-            inset: 0;
-            z-index: 9995;
-            pointer-events: none;
-            background: radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(10, 10, 15, 0.7) 100%);
-        }
-
-        /* ===================== ORB ===================== */
-        #orb {
-            position: fixed;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 0;
-            width: 900px;
-            height: 900px;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
-            filter: blur(80px);
-            transition: all 0.3s ease;
-        }
-
-        /* ===================== DYNAMIC ISLAND ===================== */
-        .dynamic-island {
-            position: fixed;
-            top: 12px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10002;
-            background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(20, 20, 30, 0.9));
-            border: 1px solid rgba(99, 102, 241, 0.4);
-            border-radius: 28px;
-            padding: 8px 20px;
-            backdrop-filter: blur(20px);
-            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 140px;
-            height: 40px;
-            animation: island-float 3s ease-in-out infinite;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-        }
-
-        .dynamic-island:hover {
-            border-color: rgba(99, 102, 241, 0.6);
-            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.3);
-        }
-
-        .dynamic-island.expanded {
-            animation: none;
-            transform: translateX(-50%) translateY(0);
-            width: auto;
-            min-width: auto;
-            border-radius: 20px;
-            padding: 12px 16px;
-            height: auto;
-            min-height: 40px;
-        }
-
-        @keyframes island-float {
-            0%, 100% {
-                transform: translateX(-50%) translateY(0);
-            }
-            50% {
-                transform: translateX(-50%) translateY(-8px);
-            }
-        }
-
-        .dynamic-island-content {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            width: 100%;
-        }
-
-        .dynamic-island-text {
-            font-size: 13px;
-            font-weight: 700;
-            color: #fff;
-            letter-spacing: 1px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            white-space: nowrap;
-        }
-
-        .dynamic-island-indicator {
-            width: 6px;
-            height: 6px;
-            background: #6366f1;
-            border-radius: 50%;
-            animation: pulse-indicator 2s ease-in-out infinite;
-            box-shadow: 0 0 10px rgba(99, 102, 241, 0.8);
-        }
-
-        @keyframes pulse-indicator {
-            0%, 100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-            50% {
-                opacity: 0.5;
-                transform: scale(0.8);
-            }
-        }
-
-        .island-menu {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .island-link {
-            text-decoration: none;
-            color: var(--secondary);
-            font-size: 12px;
-            font-weight: 700;
-            padding: 6px 12px;
-            border-radius: 16px;
-            transition: all 0.3s ease;
-            border: 1px solid transparent;
-            white-space: nowrap;
-        }
-
-        .island-link:hover {
-            background: rgba(99, 102, 241, 0.2);
-            color: #fff;
-            border-color: rgba(99, 102, 241, 0.4);
-        }
-
-        .island-link.island-buy {
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            color: #fff;
-            border: none;
-        }
-
-        .island-link.island-buy:hover {
-            background: linear-gradient(135deg, #7c3aed, #a78bfa);
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
-        }
-
-        /* ===================== LOADING SCREEN ===================== */
-        .loading-screen {
-            position: fixed;
-            inset: 0;
-            z-index: 99999;
-            background: var(--bg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: fadeOut 0.5s ease-out 1.5s forwards;
-        }
-
-        @keyframes fadeOut {
-            to {
-                opacity: 0;
-                pointer-events: none;
-            }
-        }
-
-        .loading-container {
-            position: relative;
-            width: 300px;
-            height: 300px;
-        }
-
-        .stars-background {
-            position: absolute;
-            inset: 0;
-        }
-
-        .star {
-            position: absolute;
-            color: #6366f1;
-            font-size: 20px;
-            opacity: 0;
-            animation: starFall 1.5s ease-in forwards;
-            text-shadow: 0 0 10px rgba(99, 102, 241, 0.6);
-            transform: translate(-50%, -50%);
-            animation-delay: var(--delay, 0s);
-        }
-
-        @keyframes starFall {
-            0% {
-                opacity: 0;
-                transform: translateY(-100px) scale(0);
-            }
-            50% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-            100% {
-                opacity: 0;
-                transform: translateY(100px) scale(0);
-            }
-        }
-
-        .loading-spinner {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .spinner-star {
-            font-size: 80px;
-            color: #6366f1;
-            animation: spinStar 2s linear infinite;
-            text-shadow: 0 0 20px rgba(99, 102, 241, 0.8), 0 0 40px rgba(139, 92, 246, 0.5);
-        }
-
-        @keyframes spinStar {
-            0% {
-                transform: rotate(0deg) scale(1);
-            }
-            50% {
-                transform: rotate(180deg) scale(1.1);
-            }
-            100% {
-                transform: rotate(360deg) scale(1);
-            }
-        }
-
-        .loading-text {
-            position: absolute;
-            bottom: -60px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 24px;
-            font-weight: 900;
-            color: #fff;
-            letter-spacing: 4px;
-            font-family: var(--font-heading);
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: textPulse 1.5s ease-in-out infinite;
-        }
-
-        @keyframes textPulse {
-            0%, 100% {
-                opacity: 0.5;
-                transform: translateX(-50%) scale(1);
-            }
-            50% {
-                opacity: 1;
-                transform: translateX(-50%) scale(1.1);
-            }
-        }
-
-        /* ===================== CURSOR ===================== */
-        #cursor {
-            position: fixed;
-            width: 12px;
-            height: 12px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 10001;
-            box-shadow: 0 0 15px rgba(99, 102, 241, 0.8);
-            transition: transform 0.05s ease-out;
-        }
-
-        /* ===================== HEADER ===================== */
-        header {
-            padding: 24px 48px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: fixed;
-            width: 100%;
-            z-index: 100;
-            background: rgba(10, 10, 15, 0.7);
-            backdrop-filter: blur(20px) saturate(180%);
-            border-bottom: 1px solid rgba(99, 102, 241, 0.1);
-        }
-
-        .brand {
-            text-decoration: none;
-            font-weight: 900;
-            font-size: 40px;
-            letter-spacing: -1px;
-            font-family: var(--font-heading);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            background: rgba(99, 102, 241, 0.1);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
-            color: #6366f1;
-            text-shadow: 0 0 15px rgba(99, 102, 241, 0.6);
-        }
-
-        .brand:hover {
-            border-color: rgba(99, 102, 241, 0.6);
-            box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
-            transform: scale(1.1) rotate(15deg);
-        }
-
-        /* ===================== HERO ===================== */
-        .hero {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 120px 48px 80px;
-            position: relative;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
-        }
-
-        .hero-grid {
-            max-width: 1400px;
-            width: 100%;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 100px;
-            align-items: center;
-        }
-
-        .hero-badge {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            color: #fff;
-            display: inline-block;
-            padding: 8px 16px;
-            font-size: 13px;
-            margin-bottom: 24px;
-            border-radius: 100px;
-            font-weight: 700;
-            backdrop-filter: blur(10px);
-        }
-
-        .hero-title {
-            font-family: var(--font-heading);
-            font-size: clamp(48px, 7vw, 110px);
-            font-weight: 800;
-            line-height: 0.9;
-            background: linear-gradient(135deg, #fff 0%, #a0a0b0 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: -4px;
-            margin-bottom: 24px;
-        }
-
-        .hero-desc {
-            color: var(--secondary);
-            font-weight: 500;
-            font-size: 19px;
-            margin-bottom: 40px;
-            line-height: 1.6;
-            max-width: 500px;
-        }
-
-        .hero-buttons {
-            display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        .hero-visual {
-            background: linear-gradient(135deg, rgba(18, 18, 26, 0.8), rgba(18, 18, 26, 0.4));
-            border: 1px solid rgba(99, 102, 241, 0.2);
-            border-radius: 24px;
-            padding: 0;
-            backdrop-filter: blur(20px);
-            position: relative;
-            overflow: hidden;
-            height: 500px;
-        }
-
-        .hero-visual::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent 30%, rgba(99, 102, 241, 0.03) 50%, transparent 70%);
-            animation: shine 3s infinite;
-            z-index: 1;
-        }
-
-        @keyframes shine {
-            0% {
-                transform: translateX(-100%) translateY(-100%) rotate(45deg);
-            }
-            100% {
-                transform: translateX(100%) translateY(100%) rotate(45deg);
-            }
-        }
-
-        .terminal-header {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 24px;
-            position: absolute;
-            top: 24px;
-            left: 24px;
-            z-index: 10;
-        }
-
-        .terminal-dot {
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-        }
-
-        .dot-red {
-            background: #ff5f56;
-        }
-
-        .dot-yellow {
-            background: #ffbd2e;
-        }
-
-        .dot-green {
-            background: #27c93f;
-        }
-
-        .hero-video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 24px;
-            display: block;
-            animation: pulse-glow 3s ease-in-out infinite;
-        }
-
-        @keyframes pulse-glow {
-            0%, 100% {
-                filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.3));
-            }
-            50% {
-                filter: drop-shadow(0 0 25px rgba(99, 102, 241, 0.6));
-            }
-        }
-
-        /* ===================== BUTTONS ===================== */
-        .btn {
-            padding: 18px 36px;
-            border-radius: 100px;
-            font-weight: 700;
-            font-size: 15px;
-            text-transform: uppercase;
-            border: none;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            display: inline-block;
-            text-decoration: none;
-            white-space: nowrap;
-            font-family: var(--font-main);
-        }
-
-        .btn-buy {
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            color: #fff;
-            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
-        }
-
-        .btn-buy:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.5);
-        }
-
-        .btn.glass {
-            background: rgba(255, 255, 255, 0.05);
-            color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-        }
-
-        .btn.glass:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(99, 102, 241, 0.3);
-            transform: translateY(-2px);
-        }
-
-        /* ===================== STATS ===================== */
-        .stats-section {
-            padding: 80px 48px;
-            max-width: 1400px;
-            margin: 0 auto;
-            background: linear-gradient(180deg, rgba(18, 18, 26, 0.3) 0%, transparent 100%);
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 24px;
-            margin: 0;
-        }
-
-        .stat-card {
-            text-align: center;
-            padding: 32px;
-            background: linear-gradient(135deg, rgba(18, 18, 26, 0.6), rgba(18, 18, 26, 0.3));
-            border: 1px solid rgba(99, 102, 241, 0.1);
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            transition: all 0.4s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-8px);
-            border-color: rgba(99, 102, 241, 0.4);
-            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.2);
-        }
-
-        .stat-number {
-            font-size: 48px;
-            font-weight: 900;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 8px;
-        }
-
-        .stat-label {
-            color: var(--secondary);
-            font-size: 14px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        /* ===================== PREVIEW SECTION ===================== */
-        .preview-section {
-            padding: 100px 48px;
-            background: linear-gradient(180deg, rgba(18, 18, 26, 0.2) 0%, transparent 100%);
-        }
-
-        .preview-container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .preview-header {
-            text-align: center;
-            margin-bottom: 60px;
-        }
-
-        .preview-title {
-            font-family: var(--font-heading);
-            font-size: clamp(36px, 5vw, 56px);
-            font-weight: 700;
-            background: linear-gradient(135deg, #fff 0%, #a0a0b0 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-transform: uppercase;
-            letter-spacing: -2px;
-            margin-bottom: 12px;
-        }
-
-        .preview-subtitle {
-            color: var(--secondary);
-            font-size: 18px;
-            font-weight: 500;
-        }
-
-        .preview-window {
-            background: linear-gradient(135deg, rgba(18, 18, 26, 0.8), rgba(18, 18, 26, 0.4));
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            border-radius: 24px;
-            padding: 0;
-            backdrop-filter: blur(20px);
-            position: relative;
-            overflow: hidden;
-            height: 600px;
-            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.2);
-            transition: all 0.4s ease;
-        }
-
-        .preview-window:hover {
-            border-color: rgba(99, 102, 241, 0.6);
-            box-shadow: 0 30px 80px rgba(99, 102, 241, 0.3);
-            transform: translateY(-8px);
-        }
-
-        .preview-window::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent 30%, rgba(99, 102, 241, 0.03) 50%, transparent 70%);
-            animation: shine 3s infinite;
-            z-index: 1;
-        }
-
-        .preview-terminal-header {
-            display: flex;
-            gap: 8px;
-            position: absolute;
-            top: 16px;
-            left: 16px;
-            z-index: 10;
-        }
-
-        .preview-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-
-        .preview-dot-red {
-            background: #ff5f56;
-        }
-
-        .preview-dot-yellow {
-            background: #ffbd2e;
-        }
-
-        .preview-dot-green {
-            background: #27c93f;
-        }
-
-        .preview-video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-            position: relative;
-            z-index: 2;
-        }
-
-        /* ===================== FEATURES ===================== */
-        .features-section {
-            padding: 100px 48px;
-            background: linear-gradient(180deg, transparent 0%, rgba(18, 18, 26, 0.4) 100%);
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 32px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .section-h2 {
-            font-family: var(--font-heading);
-            font-weight: 800;
-            font-size: clamp(36px, 5vw, 64px);
-            background: linear-gradient(135deg, #fff 0%, #a0a0b0 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-transform: uppercase;
-            letter-spacing: -2px;
-            text-align: center;
-            margin-bottom: 80px;
-        }
-
-        .feature-card {
-            background: linear-gradient(135deg, rgba(18, 18, 26, 0.6), rgba(18, 18, 26, 0.3));
-            border: 1px solid rgba(99, 102, 241, 0.1);
-            border-radius: 24px;
-            padding: 40px;
-            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-            backdrop-filter: blur(10px);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .feature-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
-            opacity: 0;
-            transition: opacity 0.4s ease;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-8px);
-            border-color: rgba(99, 102, 241, 0.4);
-            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.2);
-        }
-
-        .feature-card:hover::before {
-            opacity: 1;
-        }
-
-        .feature-card h3 {
-            font-size: 24px;
-            margin-bottom: 16px;
-            font-weight: 800;
-            position: relative;
-            z-index: 1;
-        }
-
-        .feature-card p {
-            color: var(--secondary);
-            line-height: 1.7;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* ===================== PAYMENT SECTION ===================== */
-        .payment-section {
-            padding: 100px 48px;
-            background: linear-gradient(180deg, rgba(18, 18, 26, 0.4) 0%, transparent 100%);
-        }
-
-        .payment-container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .payment-title {
-            font-family: var(--font-heading);
-            font-size: clamp(36px, 5vw, 56px);
-            font-weight: 700;
-            background: linear-gradient(135deg, #fff 0%, #a0a0b0 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-transform: uppercase;
-            letter-spacing: -2px;
-            text-align: center;
-            margin-bottom: 60px;
-        }
-
-        .payment-methods {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 32px;
-        }
-
-        .payment-card {
-            background: linear-gradient(135deg, rgba(18, 18, 26, 0.6), rgba(18, 18, 26, 0.3));
-            border: 1px solid rgba(99, 102, 241, 0.2);
-            border-radius: 20px;
-            padding: 40px;
-            text-align: center;
-            transition: all 0.4s ease;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .payment-card:hover {
-            transform: translateY(-8px);
-            border-color: rgba(99, 102, 241, 0.5);
-            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.2);
-            background: linear-gradient(135deg, rgba(18, 18, 26, 0.8), rgba(18, 18, 26, 0.5));
-        }
-
-        .payment-icon {
-            font-size: 48px;
-            animation: float-icon 3s ease-in-out infinite;
-        }
-
-        @keyframes float-icon {
-            0%, 100% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-10px);
-            }
-        }
-
-        .payment-name {
-            font-size: 20px;
-            font-weight: 700;
-            color: #fff;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .payment-desc {
-            color: var(--secondary);
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        /* ===================== FOOTER ===================== */
-        footer {
-            background: rgba(10, 10, 15, 0.8);
-            border-top: 1px solid rgba(99, 102, 241, 0.1);
-            padding: 60px 48px;
-            text-align: center;
-        }
-
-        footer p {
-            color: var(--secondary);
-            font-size: 14px;
-        }
-
-        /* ===================== RESPONSIVE ===================== */
-        @media (max-width: 968px) {
-            .hero-grid {
-                grid-template-columns: 1fr !important;
-                gap: 40px !important;
-            }
-
-            header {
-                padding: 20px 24px;
-            }
-
-            .hero {
-                padding: 100px 24px 60px;
-            }
-
-            .features-section {
-                padding: 60px 24px;
-            }
-
-            .stats-section {
-                padding: 60px 24px;
-            }
-
-            .hero-visual {
-                height: 350px;
-            }
-        }
-
-        @media (max-width: 640px) {
-            .hero-buttons {
-                flex-direction: column;
-            }
-
-            .btn {
-                width: 100%;
-                text-align: center;
-            }
-        }
-    </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LUMEN — Официальный сайт</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background:#07070d;
+  color:#fff;
+  font-family:'Outfit',sans-serif;
+  overflow-x:hidden;
+  cursor:none;
+}
+
+/* ── CURSOR ── */
+#cur-dot{
+  position:fixed;width:7px;height:7px;
+  background:#6366f1;border-radius:50%;
+  pointer-events:none;z-index:999999;
+  left:-50px;top:-50px;
+  transform:translate(-50%,-50%);
+  transition:transform .3s cubic-bezier(0.4, 0, 0.2, 1),background .4s ease,box-shadow .4s ease;
+  box-shadow:0 0 8px rgba(99,102,241,.9),0 0 16px rgba(99,102,241,.4);
+}
+#cur-ring{
+  position:fixed;width:30px;height:30px;
+  border:1.5px solid rgba(99,102,241,.45);border-radius:50%;
+  pointer-events:none;z-index:999998;
+  left:-50px;top:-50px;
+  transform:translate(-50%,-50%);
+  transition:width .4s cubic-bezier(0.4, 0, 0.2, 1),height .4s cubic-bezier(0.4, 0, 0.2, 1),border-color .4s ease;
+}
+body.hov #cur-ring{width:46px;height:46px;border-color:rgba(139,92,246,.75);}
+body.hov #cur-dot{transform:translate(-50%,-50%) scale(1.5);background:#8b5cf6;}
+
+/* ── STARS CANVAS ── */
+#starCanvas{
+  position:fixed;inset:0;z-index:-2;
+  pointer-events:none;
+}
+
+/* ── NOISE + GRID ── */
+.noise{
+  position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.025;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.gridlines{
+  position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(99,102,241,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(99,102,241,.025) 1px,transparent 1px);
+  background-size:80px 80px;
+}
+#orb{
+  position:fixed;border-radius:50%;pointer-events:none;z-index:0;
+  width:600px;height:600px;
+  background:radial-gradient(circle,rgba(99,102,241,.11) 0%,transparent 70%);
+  filter:blur(100px);
+}
+
+/* ── LOADING ── */
+#loading{
+  position:fixed;inset:0;z-index:999999;
+  background:#07070d;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+}
+#loading.out{animation:ldOut .55s ease forwards;}
+@keyframes ldOut{to{opacity:0;pointer-events:none;}}
+.ld-logo{
+  font-size:56px;font-weight:900;letter-spacing:12px;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.ld-sub{
+  font-family:'Share Tech Mono',monospace;
+  font-size:10px;color:#6366f1;letter-spacing:5px;opacity:.6;
+}
+.ld-track{width:200px;height:1.5px;background:rgba(99,102,241,.12);border-radius:99px;overflow:hidden;}
+.ld-fill{height:100%;width:0;background:linear-gradient(90deg,#6366f1,#8b5cf6);border-radius:99px;box-shadow:0 0 8px rgba(99,102,241,.7);}
+.ld-pct{font-family:'Share Tech Mono',monospace;font-size:10px;color:#50507a;letter-spacing:2px;}
+
+/* ── HEADER ── */
+header{
+  position:fixed;top:0;left:0;right:0;z-index:500;
+  padding:16px 48px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  background:rgba(7,7,13,.82);backdrop-filter:blur(28px);
+  border-bottom:1px solid rgba(99,102,241,.07);
+  transition:background .6s cubic-bezier(0.4, 0, 0.2, 1),border-color .6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+header.scrolled{background:rgba(7,7,13,.97);border-color:rgba(99,102,241,.12);}
+.header-top{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:1240px;}
+.brand{display:flex;align-items:center;gap:11px;text-decoration:none;}
+.brand-star{
+  width:36px;height:36px;border-radius:9px;
+  background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.28);
+  display:flex;align-items:center;justify-content:center;
+  font-size:17px;color:#6366f1;
+  box-shadow:0 0 14px rgba(99,102,241,.2);
+  transition:transform .6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.brand:hover .brand-star{transform:rotate(18deg) scale(1.1);}
+.brand-txt .bn{
+  font-weight:900;font-size:17px;letter-spacing:5px;
+  background:linear-gradient(135deg,#fff,#b0b0c8);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+nav{
+  display:flex;gap:3px;
+  background:rgba(14,14,22,.75);padding:5px 7px;
+  border-radius:99px;border:1px solid rgba(99,102,241,.07);
+}
+nav a{
+  text-decoration:none;color:#7070a0;font-size:11.5px;font-weight:700;
+  padding:7px 15px;border-radius:99px;letter-spacing:.6px;
+  transition:all .4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+nav a:hover,nav a.active{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;box-shadow:0 3px 12px rgba(99,102,241,.3);}
+.hdr-pill{
+  display:flex;align-items:center;gap:7px;
+  font-family:'Share Tech Mono',monospace;font-size:10px;color:#7070a0;letter-spacing:1px;
+  background:rgba(14,14,22,.8);border:1px solid rgba(99,102,241,.1);
+  padding:6px 13px;border-radius:99px;
+}
+.hdr-dot{width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 7px rgba(34,197,94,.9);animation:pdot 2s ease-in-out infinite;}
+@keyframes pdot{0%,100%{box-shadow:0 0 5px rgba(34,197,94,.7);}50%{box-shadow:0 0 13px rgba(34,197,94,1);}}
+
+/* ── PAGE SYSTEM ── */
+.page{display:none;min-height:100vh;}
+.page.active{display:block;}
+
+/* ── HERO ── */
+.hero{
+  min-height:100vh;
+  display:flex;align-items:center;
+  padding:110px 48px 80px;
+}
+.hero-inner{
+  max-width:1240px;margin:0 auto;width:100%;
+  display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:center;
+}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.22);
+  padding:5px 14px;border-radius:99px;margin-bottom:26px;
+  font-size:10px;font-weight:700;letter-spacing:2.5px;color:#8080b0;
+}
+.ey-dot{width:5px;height:5px;border-radius:50%;background:#22c55e;box-shadow:0 0 7px rgba(34,197,94,.9);}
+.hero-title{
+  font-size:clamp(44px,5.5vw,88px);font-weight:900;line-height:.92;letter-spacing:-3px;
+  margin-bottom:26px;
+}
+.ht1{
+  display:block;
+  background:linear-gradient(160deg,#ffffff 0%,#b0b0cc 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.ht2{
+  display:block;
+  background:linear-gradient(135deg,#6366f1 0%,#a78bfa 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero-desc{color:#5a5a80;font-size:15.5px;line-height:1.85;max-width:420px;margin-bottom:32px;font-weight:400;}
+.hero-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:34px;}
+.chip{
+  font-family:'Share Tech Mono',monospace;font-size:9.5px;letter-spacing:1.5px;
+  padding:4px 11px;border-radius:5px;
+  background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.16);color:#6366f1;
+}
+.hero-btns{display:flex;gap:11px;flex-wrap:wrap;}
+.btn{
+  padding:13px 28px;border-radius:99px;font-weight:700;font-size:12px;
+  text-transform:uppercase;letter-spacing:1.2px;border:none;cursor:none;
+  text-decoration:none;display:inline-block;transition:all .5s cubic-bezier(0.4, 0, 0.2, 1);white-space:nowrap;
+}
+.btn-main{
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  color:#fff;box-shadow:0 6px 24px rgba(99,102,241,.26);
+}
+.btn-main:hover{transform:translateY(-2px);box-shadow:0 12px 36px rgba(99,102,241,.42);}
+.btn-ghost{
+  background:rgba(255,255,255,.04);color:#8080a0;
+  border:1px solid rgba(255,255,255,.09);
+}
+.btn-ghost:hover{background:rgba(255,255,255,.08);color:#fff;transform:translateY(-2px);}
+
+/* Hero visual */
+.hero-visual{position:relative;}
+.hero-frame{
+  border-radius:18px;overflow:hidden;
+  border:1px solid rgba(99,102,241,.18);
+  box-shadow:0 0 50px rgba(99,102,241,.1),0 30px 70px rgba(0,0,0,.55);
+  height:480px;position:relative;
+}
+.hero-frame img{width:100%;height:100%;object-fit:cover;display:block;}
+.hero-frame-grad{
+  position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(7,7,13,.1) 40%,rgba(7,7,13,.8) 100%);
+}
+.hf-corner{position:absolute;width:13px;height:13px;}
+.hf-tl{top:10px;left:10px;border-top:1.5px solid rgba(99,102,241,.45);border-left:1.5px solid rgba(99,102,241,.45);}
+.hf-tr{top:10px;right:10px;border-top:1.5px solid rgba(99,102,241,.45);border-right:1.5px solid rgba(99,102,241,.45);}
+.hf-bl{bottom:10px;left:10px;border-bottom:1.5px solid rgba(99,102,241,.45);border-left:1.5px solid rgba(99,102,241,.45);}
+.hf-br{bottom:10px;right:10px;border-bottom:1.5px solid rgba(99,102,241,.45);border-right:1.5px solid rgba(99,102,241,.45);}
+
+/* ── STATS STRIP ── */
+.stats-strip{
+  padding:0 48px 80px;
+  max-width:1240px;margin:0 auto;
+}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.s-card{
+  text-align:center;padding:28px 16px;
+  background:rgba(14,14,22,.7);border:1px solid rgba(99,102,241,.09);
+  border-radius:16px;backdrop-filter:blur(10px);
+  transition:all .6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.s-card:hover{transform:translateY(-5px);border-color:rgba(99,102,241,.3);box-shadow:0 14px 44px rgba(99,102,241,.15);}
+.s-num{
+  font-size:36px;font-weight:900;line-height:1;
+  background:linear-gradient(135deg,#6366f1,#a78bfa);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:5px;
+}
+.s-lbl{font-size:10px;font-weight:600;color:#50507a;text-transform:uppercase;letter-spacing:2px;}
+
+/* ── SECTION WRAPPER ── */
+.section{padding:80px 48px;}
+.sec-center{max-width:1240px;margin:0 auto;}
+.sec-top{text-align:center;margin-bottom:52px;}
+.sec-tag{
+  font-family:'Share Tech Mono',monospace;font-size:9.5px;color:#6366f1;
+  letter-spacing:4px;display:block;margin-bottom:14px;
+}
+.sec-h{
+  font-size:clamp(28px,3.5vw,46px);font-weight:900;letter-spacing:-2px;
+  background:linear-gradient(135deg,#fff,#9090b0);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:10px;
+}
+.sec-p{color:#50507a;font-size:14px;}
+
+/* ── PREVIEW BOX ── */
+.prev-wrap{
+  border-radius:18px;overflow:hidden;
+  border:1px solid rgba(99,102,241,.22);
+  box-shadow:0 18px 55px rgba(99,102,241,.15);
+  height:560px;transition:all .35s ease;
+}
+.prev-wrap:hover{transform:translateY(-5px);border-color:rgba(99,102,241,.45);box-shadow:0 28px 70px rgba(99,102,241,.25);}
+.prev-wrap video{width:100%;height:100%;object-fit:cover;display:block;}
+
+/* ── FEATURES ── */
+.f-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+.f-card{
+  background:rgba(14,14,22,.7);border:1px solid rgba(99,102,241,.09);
+  border-radius:16px;padding:30px;transition:all .6s cubic-bezier(0.4, 0, 0.2, 1);
+  position:relative;overflow:hidden;
+}
+.f-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(99,102,241,.35),transparent);
+  opacity:0;transition:opacity .6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.f-card:hover{transform:translateY(-5px);border-color:rgba(99,102,241,.28);box-shadow:0 14px 44px rgba(99,102,241,.13);}
+.f-card:hover::before{opacity:1;}
+.f-ico{
+  width:42px;height:42px;border-radius:11px;
+  background:rgba(99,102,241,.09);border:1px solid rgba(99,102,241,.18);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;margin-bottom:16px;
+}
+.f-card h3{font-size:15px;font-weight:800;margin-bottom:9px;letter-spacing:.2px;}
+.f-card p{color:#50507a;font-size:13px;line-height:1.75;}
+
+/* ── FAQ ── */
+.faq-list{display:flex;flex-direction:column;gap:9px;}
+.faq-item{
+  background:rgba(14,14,22,.7);border:1px solid rgba(99,102,241,.09);
+  border-radius:13px;overflow:hidden;transition:border-color .22s;
+}
+.faq-item.open{border-color:rgba(99,102,241,.32);}
+.faq-q{
+  padding:17px 22px;display:flex;align-items:center;justify-content:space-between;gap:14px;
+  cursor:none;user-select:none;
+}
+.faq-q span{font-size:14px;font-weight:700;line-height:1.4;}
+.faq-arr{
+  flex-shrink:0;width:24px;height:24px;border-radius:50%;
+  background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.18);
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;color:#6366f1;
+  transition:transform .28s,background .22s;
+}
+.faq-item.open .faq-arr{transform:rotate(180deg);background:rgba(99,102,241,.18);}
+.faq-body{max-height:0;overflow:hidden;transition:max-height .32s ease,padding .22s;padding:0 22px;}
+.faq-item.open .faq-body{max-height:160px;padding:0 22px 17px;}
+.faq-body p{color:#50507a;font-size:13px;line-height:1.8;}
+
+/* ── BOTTOM GIF ── */
+.bot-gif{
+  padding:50px 48px 80px;
+  display:flex;flex-direction:column;align-items:center;gap:18px;
+}
+.bot-gif-lbl{
+  font-family:'Share Tech Mono',monospace;font-size:9px;
+  color:#6366f1;letter-spacing:5px;opacity:.6;
+}
+.bot-gif-frame{
+  max-width:400px;width:100%;border-radius:16px;overflow:hidden;
+  border:1px solid rgba(99,102,241,.22);
+  box-shadow:0 0 50px rgba(99,102,241,.18);
+  transition:all .32s ease;
+}
+.bot-gif-frame:hover{border-color:rgba(99,102,241,.5);box-shadow:0 0 80px rgba(99,102,241,.32);transform:translateY(-4px);}
+.bot-gif-frame img{width:100%;display:block;}
+
+/* ── FOOTER ── */
+footer{
+  background:rgba(7,7,13,.95);border-top:1px solid rgba(99,102,241,.07);
+  padding:44px 48px;text-align:center;
+}
+.foot-logo{
+  font-size:18px;font-weight:900;letter-spacing:7px;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:14px;
+}
+.foot-links{display:flex;justify-content:center;gap:22px;flex-wrap:wrap;margin-bottom:22px;}
+.foot-links a{color:#40406a;text-decoration:none;font-size:11px;font-weight:600;letter-spacing:.6px;transition:color .2s;}
+.foot-links a:hover{color:#6366f1;}
+.foot-copy{color:#30304a;font-size:11px;line-height:1.8;}
+
+/* ── PREVIEW PAGE ── */
+#page-preview{background:#07070d;}
+.prev-page-hero{
+  min-height:100vh;display:flex;align-items:center;
+  padding:110px 48px 80px;
+}
+.prev-page-inner{max-width:1240px;margin:0 auto;width:100%;}
+.prev-page-title{
+  font-size:clamp(40px,5vw,76px);font-weight:900;letter-spacing:-3px;
+  background:linear-gradient(135deg,#fff,#9090b0);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:16px;
+}
+.prev-page-sub{color:#50507a;font-size:15px;margin-bottom:48px;line-height:1.7;}
+.prev-video-big{
+  border-radius:20px;overflow:hidden;
+  border:1px solid rgba(99,102,241,.25);
+  box-shadow:0 24px 70px rgba(99,102,241,.2);
+  height:640px;margin-bottom:48px;
+}
+.prev-video-big video{width:100%;height:100%;object-fit:cover;display:block;}
+.prev-info-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.prev-info-card{
+  background:rgba(14,14,22,.8);border:1px solid rgba(99,102,241,.1);
+  border-radius:14px;padding:24px;text-align:center;
+}
+.pic-num{
+  font-size:32px;font-weight:900;
+  background:linear-gradient(135deg,#6366f1,#a78bfa);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:5px;
+}
+.pic-lbl{font-size:11px;color:#50507a;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;}
+
+/* ── ABOUT PAGE ── */
+.about-content{
+  max-width:800px;margin:0 auto;
+  background:rgba(14,14,22,.7);border:1px solid rgba(99,102,241,.09);
+  border-radius:16px;padding:48px;
+}
+.about-content h3{
+  font-size:22px;font-weight:800;margin-bottom:16px;
+  background:linear-gradient(135deg,#6366f1,#a78bfa);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.about-content p{color:#5a5a80;font-size:14px;line-height:1.85;margin-bottom:20px;}
+
+/* ── CONTACT PAGE ── */
+.contact-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;}
+.contact-card{
+  background:rgba(14,14,22,.7);border:1px solid rgba(99,102,241,.09);
+  border-radius:16px;padding:32px;text-align:center;
+  transition:all .3s ease;
+}
+.contact-card:hover{transform:translateY(-5px);border-color:rgba(99,102,241,.28);box-shadow:0 14px 44px rgba(99,102,241,.13);}
+.contact-ico{font-size:38px;margin-bottom:16px;}
+.contact-card h3{font-size:16px;font-weight:800;margin-bottom:8px;}
+.contact-card p{color:#50507a;font-size:13px;line-height:1.7;}
+.contact-link{
+  display:inline-block;margin-top:12px;
+  color:#6366f1;text-decoration:none;font-size:12px;font-weight:700;
+  padding:8px 18px;border-radius:99px;
+  background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.18);
+  transition:all .2s;
+}
+.contact-link:hover{background:rgba(99,102,241,.18);transform:translateY(-2px);}
+
+/* ── LIBRARY PAGE ── */
+.lib-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+.lib-card{
+  background:rgba(14,14,22,.7);border:1px solid rgba(99,102,241,.09);
+  border-radius:16px;padding:24px;transition:all .6s cubic-bezier(0.4, 0, 0.2, 1);
+  position:relative;overflow:hidden;
+}
+.lib-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(99,102,241,.35),transparent);
+  opacity:0;transition:opacity .6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.lib-card:hover{transform:translateY(-5px) scale(1.02);border-color:rgba(99,102,241,.28);box-shadow:0 14px 44px rgba(99,102,241,.13);}
+.lib-card:hover::before{opacity:1;}
+.lib-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.lib-game{font-size:15px;font-weight:800;letter-spacing:.2px;}
+.lib-badge{
+  font-size:9px;font-weight:700;letter-spacing:1.5px;
+  padding:4px 10px;border-radius:99px;
+  background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);color:#6366f1;
+}
+.lib-badge.free{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.25);color:#22c55e;}
+.lib-desc{color:#50507a;font-size:13px;line-height:1.7;margin-bottom:14px;}
+.lib-meta{display:flex;gap:16px;margin-bottom:14px;font-size:11px;color:#40406a;}
+.lib-meta-item{display:flex;align-items:center;gap:5px;}
+.lib-btn{
+  width:100%;padding:10px;border-radius:8px;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  color:#fff;font-size:11px;font-weight:700;letter-spacing:1px;
+  text-align:center;text-decoration:none;display:block;
+  transition:all .5s cubic-bezier(0.4, 0, 0.2, 1);border:none;cursor:none;
+}
+.lib-btn:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 8px 20px rgba(99,102,241,.3);}
+
+/* ── MODAL ── */
+.modal{
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(7,7,13,.95);backdrop-filter:blur(20px);
+  display:none;align-items:center;justify-content:center;
+  padding:20px;
+}
+.modal.active{display:flex;}
+.modal-content{
+  background:rgba(14,14,22,.95);border:1px solid rgba(99,102,241,.2);
+  border-radius:20px;padding:40px;max-width:700px;width:100%;
+  box-shadow:0 20px 60px rgba(0,0,0,.7);
+  position:relative;max-height:90vh;overflow-y:auto;
+}
+.modal-close{
+  position:absolute;top:16px;right:16px;
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);
+  display:flex;align-items:center;justify-content:center;
+  color:#6366f1;font-size:18px;cursor:none;
+  transition:all .2s;
+}
+.modal-close:hover{background:rgba(99,102,241,.2);transform:rotate(90deg);}
+.modal-title{
+  font-size:24px;font-weight:900;letter-spacing:-1px;
+  background:linear-gradient(135deg,#6366f1,#a78bfa);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:24px;
+}
+.modal-section{margin-bottom:24px;}
+.modal-section h3{
+  font-size:14px;font-weight:800;color:#8080b0;
+  text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;
+}
+.modal-section ol{margin:0;padding-left:20px;}
+.modal-section li{color:#5a5a80;font-size:14px;line-height:1.9;margin-bottom:8px;}
+.modal-section strong{color:#fff;}
+.modal-download{
+  width:100%;padding:14px;border-radius:10px;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  color:#fff;font-size:13px;font-weight:700;letter-spacing:1.2px;
+  text-align:center;text-decoration:none;display:block;
+  transition:all .2s;text-transform:uppercase;
+}
+.modal-download:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(99,102,241,.4);}
+
+/* ── CHEAT PACK MODAL ── */
+.pack-list{display:flex;flex-direction:column;gap:14px;}
+.pack-item{
+  background:rgba(14,14,22,.8);border:1px solid rgba(99,102,241,.12);
+  border-radius:12px;padding:20px;transition:all .25s ease;
+}
+.pack-item:hover{border-color:rgba(99,102,241,.3);transform:translateX(4px);}
+.pack-name{
+  font-size:16px;font-weight:800;margin-bottom:8px;
+  background:linear-gradient(135deg,#fff,#b0b0c8);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.pack-desc{color:#5a5a80;font-size:13px;line-height:1.7;margin-bottom:12px;}
+.pack-features{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+.pack-tag{
+  font-size:9px;font-weight:700;letter-spacing:1px;
+  padding:4px 9px;border-radius:5px;
+  background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.18);color:#6366f1;
+}
+.pack-btn{
+  padding:10px 20px;border-radius:8px;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  color:#fff;font-size:11px;font-weight:700;letter-spacing:1px;
+  text-align:center;text-decoration:none;display:inline-block;
+  transition:all .2s;border:none;cursor:none;
+}
+.pack-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(99,102,241,.35);}
+
+/* ── PREVIEW SLIDER ── */
+.preview-slider{position:relative;max-width:800px;margin:0 auto;}
+.slider-main{position:relative;border-radius:16px;overflow:hidden;border:1px solid rgba(99,102,241,.25);box-shadow:0 24px 70px rgba(99,102,241,.2);height:500px;}
+.slider-main img{width:100%;height:100%;object-fit:cover;display:block;transition:opacity .6s cubic-bezier(0.4, 0, 0.2, 1);}
+.slider-main img.hidden{opacity:0;position:absolute;top:0;left:0;}
+.slider-nav{display:flex;gap:12px;margin-top:16px;justify-content:center;}
+.slider-thumb{width:80px;height:80px;border-radius:10px;overflow:hidden;border:2px solid rgba(99,102,241,.2);cursor:none;transition:all .3s cubic-bezier(0.4, 0, 0.2, 1);opacity:0.6;}
+.slider-thumb:hover{opacity:0.9;transform:scale(1.05);}
+.slider-thumb.active{border-color:rgba(99,102,241,.8);opacity:1;box-shadow:0 0 16px rgba(99,102,241,.5);}
+.slider-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.slider-arrow{position:absolute;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;background:rgba(99,102,241,.2);backdrop-filter:blur(10px);border:1px solid rgba(99,102,241,.4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;cursor:none;z-index:10;transition:all .3s cubic-bezier(0.4, 0, 0.2, 1);}
+.slider-arrow:hover{background:rgba(99,102,241,.35);transform:translateY(-50%) scale(1.1);}
+.slider-prev{left:16px;}
+.slider-next{right:16px;}
+
+/* ── REVEAL ── */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .8s cubic-bezier(0.4, 0, 0.2, 1),transform .8s cubic-bezier(0.4, 0, 0.2, 1);}
+.reveal.in{opacity:1;transform:none;}
+.d1{transition-delay:.1s;}.d2{transition-delay:.2s;}.d3{transition-delay:.3s;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1024px){
+  .hero-inner{grid-template-columns:1fr;gap:44px;}
+  .stats-row{grid-template-columns:repeat(2,1fr);}
+  .f-grid{grid-template-columns:repeat(2,1fr);}
+  .lib-grid{grid-template-columns:repeat(2,1fr);}
+  .contact-grid{grid-template-columns:1fr;}
+  .prev-info-row{grid-template-columns:1fr;}
+}
+@media(max-width:768px){
+  .lib-grid{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:640px){
+  header{padding:13px 18px;}
+  .header-top{flex-direction:column;gap:10px;}
+  .hero,.section,.stats-strip,.bot-gif,.prev-page-hero{padding-left:20px;padding-right:20px;}
+  .f-grid,.stats-row,.lib-grid{grid-template-columns:1fr;}
+  .hero-btns{flex-direction:column;}
+  .btn{text-align:center;}
+  nav{flex-wrap:wrap;justify-content:center;}
+  nav a{padding:6px 10px;font-size:10.5px;}
+  .hdr-pill{display:none;}
+  .prev-video-big{height:320px;}
+  .about-content{padding:28px;}
+}
+</style>
 </head>
 <body>
-    <div class="lumen-app">
-        <img 
-            src="https://i.pinimg.com/originals/fe/b1/e7/feb1e76e95a92b1d7b47bd7f600bf615.gif" 
-            alt="background" 
-            class="bg-gif"
-        />
-        <div class="noise-layer"></div>
-        <div class="scanlines"></div>
-        <div class="grid-overlay"></div>
-        <div class="vignette"></div>
-        <div id="orb"></div>
-        <div id="cursor"></div>
 
-        <!-- Dynamic Island -->
-        <div class="dynamic-island" id="island">
-            <div class="dynamic-island-content">
-                <span class="dynamic-island-text">LUMEN</span>
-                <div class="dynamic-island-indicator"></div>
-            </div>
+<div id="cur-dot"></div>
+<div id="cur-ring"></div>
+
+<canvas id="starCanvas"></canvas>
+<div class="noise"></div>
+<div class="gridlines"></div>
+<div id="orb"></div>
+
+<!-- LOADING -->
+<div id="loading">
+  <div class="ld-logo">LUMEN</div>
+  <div class="ld-sub">МИР ЧИТЕРОВ</div>
+  <div class="ld-track"><div class="ld-fill" id="ldFill"></div></div>
+  <div class="ld-pct" id="ldPct">0%</div>
+</div>
+
+<!-- HEADER -->
+<header id="hdr">
+  <div class="header-top">
+    <a href="#" class="brand" data-goto="home">
+      <div class="brand-star">★</div>
+      <div class="brand-txt">
+        <div class="bn">LUMEN</div>
+      </div>
+    </a>
+    <div class="hdr-pill">
+      <div class="hdr-dot"></div>
+      ONLINE
+    </div>
+  </div>
+  <nav>
+    <a href="#" data-goto="home" class="nav-link active">ГЛАВНАЯ</a>
+    <a href="#" data-goto="library" class="nav-link">БИБЛИОТЕКА СОФТОВ</a>
+    <a href="#" data-goto="injector" class="nav-link">INJECTOR</a>
+    <a href="#" data-goto="executor" class="nav-link">EXECUTOR</a>
+    <a href="#" data-goto="preview" class="nav-link">ПРЕВЬЮ</a>
+    <a href="#" data-goto="about" class="nav-link">О НАС</a>
+    <a href="#" data-goto="features" class="nav-link">ФУНКЦИИ</a>
+    <a href="#" data-goto="contact" class="nav-link">КОНТАКТЫ</a>
+    <a href="#" data-goto="faq" class="nav-link">FAQ</a>
+  </nav>
+</header>
+
+<!-- ════ PAGE: HOME ════ -->
+<div class="page active" id="page-home">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div>
+        <div class="hero-eyebrow"><div class="ey-dot"></div>ЭЛИТНОЕ СООБЩЕСТВО · 2026</div>
+        <h1 class="hero-title">
+          <span class="ht1">ДОБРО</span>
+          <span class="ht2">ПОЖАЛОВАТЬ</span>
+        </h1>
+        <p class="hero-desc">
+          LUMEN — это открытое сообщество для настоящих профессионалов. Здесь собраны лучшие разработки, публичные читы и полезный контент для всех участников игрового мира.
+        </p>
+        <div class="hero-chips">
+          <div class="chip">ПУБЛИЧНЫЕ ЧИТЫ</div>
+          <div class="chip">ОТКРЫТОЕ КОМЬЮНИТИ</div>
+          <div class="chip">СООБЩЕСТВО</div>
+          <div class="chip">БЕСПЛАТНО</div>
+        </div>
+        <div class="hero-btns">
+          <a href="#" class="btn btn-main" data-goto="preview">СМОТРЕТЬ ПРЕВЬЮ</a>
+          <a href="#" class="btn btn-ghost" data-goto="about">УЗНАТЬ БОЛЬШЕ</a>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="hero-frame">
+          <img src="https://i.pinimg.com/originals/ef/df/0b/efdf0b85d02aa76a18a6eb19372275c1.gif" alt="preview"/>
+          <div class="hero-frame-grad"></div>
+          <div class="hf-corner hf-tl"></div>
+          <div class="hf-corner hf-tr"></div>
+          <div class="hf-corner hf-bl"></div>
+          <div class="hf-corner hf-br"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats-strip">
+    <div class="stats-row">
+      <div class="s-card reveal">
+        <div class="s-num">100%</div>
+        <div class="s-lbl">Бесплатно</div>
+      </div>
+      <div class="s-card reveal d1">
+        <div class="s-num">10K+</div>
+        <div class="s-lbl">Читеров</div>
+      </div>
+      <div class="s-card reveal d2">
+        <div class="s-num">24/7</div>
+        <div class="s-lbl">Поддержка</div>
+      </div>
+      <div class="s-card reveal d3">
+        <div class="s-num">50+</div>
+        <div class="s-lbl">Публичных читов</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WARNING -->
+  <div style="padding:0 48px 40px;max-width:1240px;margin:0 auto;">
+    <div style="padding:28px 32px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.25);border-radius:16px;">
+      <div style="display:flex;align-items:start;gap:16px;">
+        <div style="font-size:28px;flex-shrink:0;">⚠️</div>
+        <div>
+          <h3 style="color:#ef4444;font-size:16px;font-weight:800;margin-bottom:8px;letter-spacing:.2px;">ВНИМАНИЕ: ИСПОЛЬЗУЙТЕ НА СВОЙ СТРАХ И РИСК</h3>
+          <p style="color:#fca5a5;font-size:13px;line-height:1.75;margin:0;">
+            Все предоставляемые читы являются публичными и бесплатными. Мы не несём никакой ответственности за возможные баны, детекты, блокировки аккаунтов или любые другие последствия использования данных программ. Вся ответственность лежит исключительно на пользователе.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <section class="section">
+    <div class="sec-center">
+      <div class="sec-top">
+        <span class="sec-tag">ВОЗМОЖНОСТИ</span>
+        <h2 class="sec-h">ПОЧЕМУ МЫ ЛУЧШИЕ</h2>
+        <p class="sec-p">Элитное сообщество для настоящих профи</p>
+      </div>
+      <div class="f-grid">
+        <div class="f-card reveal">
+          <div class="f-ico">🌐</div>
+          <h3>Открытость</h3>
+          <p>Открытое комьюнити для всех желающих. Качественные разработки доступны каждому.</p>
+        </div>
+        <div class="f-card reveal d1">
+          <div class="f-ico">🆓</div>
+          <h3>Бесплатно</h3>
+          <p>Все читы абсолютно бесплатны для членов сообщества. Без подписок и платежей.</p>
+        </div>
+        <div class="f-card reveal d2">
+          <div class="f-ico">⚡</div>
+          <h3>Публичные читы</h3>
+          <p>Доступ к лучшим публичным читам, собранным в одном месте.</p>
+        </div>
+        <div class="f-card reveal">
+          <div class="f-ico">👥</div>
+          <h3>Открытое сообщество</h3>
+          <p>Общение со всеми участниками, обмен опытом и конфигами в открытом комьюнити.</p>
+        </div>
+        <div class="f-card reveal d1">
+          <div class="f-ico">🔄</div>
+          <h3>Быстрые апдейты</h3>
+          <p>Обновления после патчей выходят в течение нескольких часов.</p>
+        </div>
+        <div class="f-card reveal d2">
+          <div class="f-ico">💎</div>
+          <h3>Премиум качество</h3>
+          <p>Только топовые разработки от лучших кодеров индустрии.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BOTTOM GIF -->
+  <div class="bot-gif">
+    <span class="bot-gif-lbl">— POWERED BY LUMEN —</span>
+    <div class="bot-gif-frame">
+      <img src="https://i.pinimg.com/originals/f9/0c/ab/f90cabb54bd07921ea82e8c08d9944dd.gif" alt="lumen"/>
+    </div>
+  </div>
+
+  <footer>
+    <div class="foot-logo">LUMEN</div>
+    <div class="foot-links">
+      <a href="#" data-goto="home">Главная</a>
+      <a href="#" data-goto="preview">Превью</a>
+      <a href="#" data-goto="about">О нас</a>
+      <a href="#" data-goto="features">Функции</a>
+      <a href="#" data-goto="contact">Контакты</a>
+      <a href="#" data-goto="faq">FAQ</a>
+    </div>
+    <div class="foot-copy">© 2026 LUMEN. Все права защищены.</div>
+    <div style="margin-top:24px;max-width:280px;margin-left:auto;margin-right:auto;">
+      <video controls autoplay loop muted playsinline style="width:100%;border-radius:12px;border:1px solid rgba(99,102,241,.2);">
+        <source src="https://cdn.discordapp.com/attachments/1504834854867566643/1504880855196241951/ssstik.io_karim_genius42_1778667561582.mp4?ex=6a089903&is=6a074783&hm=836f5b6872fce739464fc8aebb5e9a97cc1cf9d0d8c722618e1d3ddf967f8817&" type="video/mp4"/>
+      </video>
+    </div>
+  </footer>
+
+</div><!-- /page-home -->
+
+<!-- ════ PAGE: PREVIEW ════ -->
+<div class="page" id="page-preview">
+  <section class="prev-page-hero">
+    <div class="prev-page-inner">
+      <div class="sec-tag" style="text-align:left;margin-bottom:14px;">ДЕМОНСТРАЦИЯ</div>
+      <h1 class="prev-page-title">LIVE ПРЕВЬЮ</h1>
+      <p class="prev-page-sub">Смотри как работают наши бесплатные софты в реальной игре — без монтажа и обработки.</p>
+
+      <div class="prev-video-big">
+        <video autoplay loop muted playsinline>
+          <source src="https://eaglescript.space/static/media/preview.651c2ae5bc752ecf2cc5.mp4" type="video/mp4"/>
+        </video>
+      </div>
+
+      <div style="margin-top:48px;">
+        <div class="preview-slider">
+          <div class="slider-main" id="sliderMinecraft">
+            <img src="https://cdn.discordapp.com/attachments/1486195068888023070/1504896254163812352/2026-05-16_01.14.24.png?ex=6a08a75a&is=6a0755da&hm=7b93679c835f62b28e5c917e310f7abaf2ceec7dfa25f626c71c9d326e3fecfc&" alt="minecraft 1"/>
+            <img src="https://cdn.discordapp.com/attachments/1486195068888023070/1504896243212484871/2026-05-16_01.19.22.png?ex=6a08a758&is=6a0755d8&hm=21b0c2335ffd3a6b92f11f2699feec23f844d2a876037ec5149b34a15a901fde&" alt="minecraft 2" style="display:none;"/>
+            <button class="slider-arrow slider-prev" onclick="prevMinecraftSlide()">‹</button>
+            <button class="slider-arrow slider-next" onclick="nextMinecraftSlide()">›</button>
+          </div>
+          <div class="slider-nav">
+            <img src="https://cdn.discordapp.com/attachments/1486195068888023070/1504896254163812352/2026-05-16_01.14.24.png?ex=6a08a75a&is=6a0755da&hm=7b93679c835f62b28e5c917e310f7abaf2ceec7dfa25f626c71c9d326e3fecfc&" alt="thumb mc 1" class="slider-thumb active" onclick="goToMinecraftSlide(0)"/>
+            <img src="https://cdn.discordapp.com/attachments/1486195068888023070/1504896243212484871/2026-05-16_01.19.22.png?ex=6a08a758&is=6a0755d8&hm=21b0c2335ffd3a6b92f11f2699feec23f844d2a876037ec5149b34a15a901fde&" alt="thumb mc 2" class="slider-thumb" onclick="goToMinecraftSlide(1)"/>
+          </div>
+        </div>
+      </div>
+
+
+
+      <div style="margin-top:48px;display:flex;gap:12px;flex-wrap:wrap;">
+        <a href="#" class="btn btn-main" data-goto="contact">СВЯЗАТЬСЯ С НАМИ</a>
+        <a href="#" class="btn btn-ghost" data-goto="home">← НАЗАД</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="foot-logo">LUMEN</div>
+    <div class="foot-links">
+      <a href="#" data-goto="home">Главная</a>
+      <a href="#" data-goto="preview">Превью</a>
+      <a href="#" data-goto="about">О нас</a>
+      <a href="#" data-goto="contact">Контакты</a>
+    </div>
+    <div class="foot-copy">© 2026 LUMEN. Все права защищены.</div>
+  </footer>
+</div><!-- /page-preview -->
+
+<!-- ════ PAGE: ABOUT ════ -->
+<div class="page" id="page-about">
+  <section class="section" style="min-height:100vh;padding-top:140px;">
+    <div class="sec-center">
+      <div class="sec-top">
+        <span class="sec-tag">ИНФОРМАЦИЯ</span>
+        <h2 class="sec-h">О СООБЩЕСТВЕ</h2>
+        <p class="sec-p">Узнайте больше о мире LUMEN</p>
+      </div>
+      
+      <div class="about-content reveal">
+        <h3>Кто мы</h3>
+        <p>LUMEN — это открытое сообщество читеров, объединяющее игроков и энтузиастов со всего мира. Мы создали пространство, где каждый может общаться, делиться опытом и получать доступ к лучшим публичным читам абсолютно бесплатно.</p>
+        
+        <h3>Бесплатный доступ для всех</h3>
+        <p>Наше открытое комьюнити предоставляет бесплатный доступ ко всем публичным читам без ограничений. Присоединяйтесь к нам и получите доступ к лучшим софтам, собранным в одном месте для удобства всего сообщества.</p>
+        
+        <h3>Игровое сообщество</h3>
+        <p>В LUMEN состоят игроки из различных дисциплин: FPS-шутеры, Battle Royale, MOBA и другие жанры. Здесь вы найдете единомышленников, проверенные конфиги и актуальную информацию о последних обновлениях публичных читов и макросов.</p>
+      </div>
+
+      <div style="margin-top:40px;text-align:center;">
+        <a href="#" class="btn btn-main" data-goto="contact">СВЯЗАТЬСЯ</a>
+        <a href="#" class="btn btn-ghost" data-goto="home" style="margin-left:12px;">← НАЗАД</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="foot-logo">LUMEN</div>
+    <div class="foot-links">
+      <a href="#" data-goto="home">Главная</a>
+      <a href="#" data-goto="about">О нас</a>
+      <a href="#" data-goto="contact">Контакты</a>
+    </div>
+    <div class="foot-copy">© 2026 LUMEN. Все права защищены.</div>
+  </footer>
+</div><!-- /page-about -->
+
+<!-- ════ PAGE: FEATURES ════ -->
+<div class="page" id="page-features">
+  <section class="section" style="min-height:100vh;padding-top:140px;">
+    <div class="sec-center">
+      <div class="sec-top">
+        <span class="sec-tag">ВОЗМОЖНОСТИ</span>
+        <h2 class="sec-h">ЧТО МЫ ПРЕДЛАГАЕМ</h2>
+        <p class="sec-p">Полный арсенал для доминирования</p>
+      </div>
+      
+      <div class="f-grid">
+        <div class="f-card reveal">
+          <div class="f-ico">🎮</div>
+          <h3>Мультиигровые читы</h3>
+          <p>Публичные софты для всех популярных игр: Valorant, CS2, Apex, Warzone и других.</p>
+        </div>
+        <div class="f-card reveal d1">
+          <div class="f-ico">⚙️</div>
+          <h3>Готовые конфиги</h3>
+          <p>Проверенные настройки от опытных игроков. Легит-конфиги и рейдж-сетапы.</p>
+        </div>
+        <div class="f-card reveal d2">
+          <div class="f-ico">📚</div>
+          <h3>База знаний</h3>
+          <p>Гайды по настройке, обход античитов, методы безопасного использования.</p>
+        </div>
+        <div class="f-card reveal">
+          <div class="f-ico">💬</div>
+          <h3>Открытый Discord</h3>
+          <p>Открытый сервер для общения, обмена опытом и получения поддержки от комьюнити.</p>
+        </div>
+        <div class="f-card reveal d1">
+          <div class="f-ico">⚡</div>
+          <h3>Мгновенные апдейты</h3>
+          <p>Обновления софтов после патчей игр выходят быстрее всех на рынке.</p>
+        </div>
+        <div class="f-card reveal d2">
+          <div class="f-ico">🔓</div>
+          <h3>Открытый доступ</h3>
+          <p>Все бесплатные софты доступны без ограничений для членов сообщества.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:48px;text-align:center;">
+        <a href="#" class="btn btn-main" data-goto="preview">СМОТРЕТЬ ПРЕВЬЮ</a>
+        <a href="#" class="btn btn-ghost" data-goto="home" style="margin-left:12px;">← НАЗАД</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="foot-logo">LUMEN</div>
+    <div class="foot-links">
+      <a href="#" data-goto="home">Главная</a>
+      <a href="#" data-goto="features">Функции</a>
+      <a href="#" data-goto="contact">Контакты</a>
+    </div>
+    <div class="foot-copy">© 2026 LUMEN. Все права защищены.</div>
+  </footer>
+</div><!-- /page-features -->
+
+<!-- ════ PAGE: CONTACT ════ -->
+<div class="page" id="page-contact">
+  <section class="section" style="min-height:100vh;padding-top:140px;">
+    <div class="sec-center">
+      <div class="sec-top">
+        <span class="sec-tag">СВЯЗЬ</span>
+        <h2 class="sec-h">ПРИСОЕДИНЯЙСЯ</h2>
+        <p class="sec-p">Открытое комьюнити для всех</p>
+      </div>
+      
+      <div class="contact-grid">
+        <div class="contact-card reveal">
+          <div class="contact-ico">💬</div>
+          <h3>Discord</h3>
+          <p>Открытый сервер для всех участников</p>
+          <a href="https://discord.gg" target="_blank" class="contact-link">Присоединиться</a>
+        </div>
+        <div class="contact-card reveal d1">
+          <div class="contact-ico">📱</div>
+          <h3>Telegram</h3>
+          <p>Открытый канал с новостями и обновлениями</p>
+          <a href="https://t.me" target="_blank" class="contact-link">Подписаться</a>
+        </div>
+        <div class="contact-card reveal d2">
+          <div class="contact-ico">🌐</div>
+          <h3>Открытое комьюнити</h3>
+          <p>Доступ для всех желающих без ограничений</p>
+          <a href="#" class="contact-link" data-goto="faq">Подробнее</a>
+        </div>
+        <div class="contact-card reveal d3">
+          <div class="contact-ico">🆓</div>
+          <h3>Бесплатно</h3>
+          <p>Все софты и читы доступны бесплатно</p>
+          <a href="#" class="contact-link" data-goto="about">Узнать больше</a>
+        </div>
+      </div>
+
+      <div style="margin-top:48px;text-align:center;">
+        <a href="#" class="btn btn-ghost" data-goto="home">← НАЗАД</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="foot-logo">LUMEN</div>
+    <div class="foot-links">
+      <a href="#" data-goto="home">Главная</a>
+      <a href="#" data-goto="contact">Контакты</a>
+      <a href="#" data-goto="faq">FAQ</a>
+    </div>
+    <div class="foot-copy">© 2026 LUMEN. Все права защищены.</div>
+  </footer>
+</div><!-- /page-contact -->
+
+<!-- ════ PAGE: FAQ ════ -->
+<div class="page" id="page-faq">
+  <section class="section" style="min-height:100vh;padding-top:140px;">
+    <div class="sec-center" style="max-width:740px;">
+      <div class="sec-top">
+        <span class="sec-tag">ВОПРОСЫ</span>
+        <h2 class="sec-h">FAQ</h2>
+        <p class="sec-p">Ответы на часто задаваемые вопросы</p>
+      </div>
+      <div class="faq-list">
+        <div class="faq-item reveal">
+          <div class="faq-q">
+            <span>Что такое LUMEN?</span>
+            <div class="faq-arr">▼</div>
+          </div>
+          <div class="faq-body">
+            <p>LUMEN — это открытое сообщество читеров, объединяющее игроков со всего мира. Здесь вы найдете лучшие публичные читы совершенно бесплатно и единомышленников.</p>
+          </div>
+        </div>
+        <div class="faq-item reveal">
+          <div class="faq-q">
+            <span>Как вступить в сообщество?</span>
+            <div class="faq-arr">▼</div>
+          </div>
+          <div class="faq-body">
+            <p>Просто присоединитесь к нам через Discord или Telegram. Наше комьюнити открыто для всех — никаких проверок и ограничений.</p>
+          </div>
+        </div>
+        <div class="faq-item reveal">
+          <div class="faq-q">
+            <span>Безопасно ли использовать публичные читы?</span>
+            <div class="faq-arr">▼</div>
+          </div>
+          <div class="faq-body">
+            <p>Публичные читы имеют риск детекта. Мы предоставляем их бесплатно, но не несем ответственности за возможные баны. Используйте на свой страх и риск.</p>
+          </div>
+        </div>
+        <div class="faq-item reveal">
+          <div class="faq-q">
+            <span>Как быстро выходят обновления после патчей?</span>
+            <div class="faq-arr">▼</div>
+          </div>
+          <div class="faq-body">
+            <p>Наши разработчики обновляют софты в течение нескольких часов после выхода патча игры. Все апдейты приходят автоматически.</p>
+          </div>
+        </div>
+        <div class="faq-item reveal">
+          <div class="faq-q">
+            <span>Для каких игр доступны читы?</span>
+            <div class="faq-arr">▼</div>
+          </div>
+          <div class="faq-body">
+            <p>Мы поддерживаем все популярные игры: Valorant, CS2, Apex Legends, Call of Duty Warzone, Rust, Escape from Tarkov и многие другие. Полный список в Discord.</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:48px;text-align:center;">
+        <a href="#" class="btn btn-main" data-goto="contact">СВЯЗАТЬСЯ</a>
+        <a href="#" class="btn btn-ghost" data-goto="home" style="margin-left:12px;">← НАЗАД</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="foot-logo">LUMEN</div>
+    <div class="foot-links">
+      <a href="#" data-goto="home">Главная</a>
+      <a href="#" data-goto="faq">FAQ</a>
+      <a href="#" data-goto="contact">Контакты</a>
+    </div>
+    <div class="foot-copy">© 2026 LUMEN. Все права защищены.</div>
+    <div style="margin-top:24px;max-width:280px;margin-left:auto;margin-right:auto;">
+      <video controls autoplay loop muted playsinline style="width:100%;border-radius:12px;border:1px solid rgba(99,102,241,.2);">
+        <source src="https://cdn.discordapp.com/attachments/1504834854867566643/1504880855196241951/ssstik.io_karim_genius42_1778667561582.mp4?ex=6a089903&is=6a074783&hm=836f5b6872fce739464fc8aebb5e9a97cc1cf9d0d8c722618e1d3ddf967f8817&" type="video/mp4"/>
+      </video>
+    </div>
+  </footer>
+</div><!-- /page-faq -->
+
+<!-- ════ PAGE: LIBRARY ════ -->
+<div class="page" id="page-library">
+  <section class="section" style="min-height:100vh;padding-top:140px;">
+    <div class="sec-center">
+      <div class="sec-top">
+        <span class="sec-tag">КОЛЛЕКЦИЯ</span>
+        <h2 class="sec-h">БИБЛИОТЕКА СОФТОВ</h2>
+        <p class="sec-p">Бесплатные публичные читы и макросы для популярных игр</p>
+      </div>
+      
+      <div class="lib-grid">
+        <div class="lib-card reveal">
+          <div class="lib-header">
+            <div class="lib-game">CS2</div>
+            <div class="lib-badge free">БЕСПЛАТНО</div>
+          </div>
+          <div class="lib-desc">Публичный софт с ESP, Aimbot и другими функциями для Counter-Strike 2.</div>
+          <div class="lib-meta">
+            <div class="lib-meta-item">🎯 Чит</div>
+            <div class="lib-meta-item">🔓 Public</div>
+          </div>
+          <button class="lib-btn" onclick="openCS2Pack()">ОТКРЫТЬ ПАК</button>
         </div>
 
-        <!-- Loading Screen -->
-        <div class="loading-screen" id="loading">
-            <div class="loading-container">
-                <div class="stars-background" id="stars"></div>
-                <div class="loading-spinner">
-                    <div class="spinner-star">★</div>
-                </div>
-                <div class="loading-text">LUMEN</div>
-            </div>
+        <div class="lib-card reveal d1">
+          <div class="lib-header">
+            <div class="lib-game">RUST</div>
+            <div class="lib-badge free">БЕСПЛАТНО</div>
+          </div>
+          <div class="lib-desc">Макрос для контроля отдачи AK-47, LR300, MP5 и других популярных оружий.</div>
+          <div class="lib-meta">
+            <div class="lib-meta-item">📦 Макрос</div>
+            <div class="lib-meta-item">🔓 Public</div>
+          </div>
+          <button class="lib-btn" onclick="openRustPack()">ОТКРЫТЬ ПАК</button>
         </div>
 
-        <!-- Header -->
-        <header id="header">
-            <a href="#" class="brand">★</a>
-        </header>
+        <div class="lib-card reveal d2">
+          <div class="lib-header">
+            <div class="lib-game">MINECRAFT</div>
+            <div class="lib-badge free">БЕСПЛАТНО</div>
+          </div>
+          <div class="lib-desc">Читы и моды для Minecraft: X-Ray, Fly, Kill Aura и другие функции.</div>
+          <div class="lib-meta">
+            <div class="lib-meta-item">🎮 Чит</div>
+            <div class="lib-meta-item">🔓 Public</div>
+          </div>
+          <button class="lib-btn" onclick="openMinecraftPack()">ОТКРЫТЬ ПАК</button>
+        </div>
 
-        <main>
-            <!-- Hero Section -->
-            <section class="hero">
-                <div class="hero-grid">
-                    <div>
-                        <div class="hero-badge">✨ UNDETECTED 2026</div>
-                        <h1 class="hero-title">
-                            ИДЕАЛЬНЫЙ<br>КОНТРОЛЬ<br>ОТДАЧИ
-                        </h1>
-                        <p class="hero-desc">
-                            Профессиональное решение для абсолютной точности. Передовые технологии, невидимость для античитов и непревзойденная производительность.
-                        </p>
-                        <div class="hero-buttons">
-                            <a href="https://funpay.com" target="_blank" class="btn btn-buy">КУПИТЬ ДОСТУП</a>
-                            <a href="#features" class="btn glass">ПОДРОБНЕЕ</a>
-                        </div>
-                    </div>
+        <div class="lib-card reveal">
+          <div class="lib-header">
+            <div class="lib-game">DDNET</div>
+            <div class="lib-badge free">БЕСПЛАТНО</div>
+          </div>
+          <div class="lib-desc">Модифицированные клиенты и читы для DDraceNetwork с дополнительными функциями.</div>
+          <div class="lib-meta">
+            <div class="lib-meta-item">🎮 Мод</div>
+            <div class="lib-meta-item">🔓 Public</div>
+          </div>
+          <button class="lib-btn" onclick="openDDNetPack()">ОТКРЫТЬ ПАК</button>
+        </div>
+      </div>
 
-                    <div class="hero-visual">
-                        <div class="terminal-header">
-                            <div class="terminal-dot dot-red"></div>
-                            <div class="terminal-dot dot-yellow"></div>
-                            <div class="terminal-dot dot-green"></div>
-                        </div>
-                        <img
-                            src="https://i.pinimg.com/originals/ef/df/0b/efdf0b85d02aa76a18a6eb19372275c1.gif"
-                            alt="animation"
-                            class="hero-video"
-                        />
-                    </div>
-                </div>
-            </section>
+      <div style="margin-top:48px;text-align:center;">
+        <p style="color:#50507a;font-size:13px;line-height:1.8;max-width:700px;margin:0 auto 24px;">
+          ⚠️ Все софты предоставляются "как есть" без каких-либо гарантий. Мы не несём ответственности за последствия использования.
+        </p>
+        <a href="#" class="btn btn-ghost" data-goto="home">← НАЗАД</a>
+      </div>
+    </div>
+  </section>
 
-            <!-- Stats Section -->
-            <section class="stats-section">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-number">79.5%</div>
-                        <div class="stat-label">Точность</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">0.04ms</div>
-                        <div class="stat-label">Отклик</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">24/7</div>
-                        <div class="stat-label">Поддержка</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">0:(</div>
-                        <div class="stat-label">Пользователей</div>
-                    </div>
-                </div>
-            </section>
+  <footer>
+    <div class="foot-logo">LUMEN</div>
+    <div class="foot-links">
+      <a href="#" data-goto="home">Главная</a>
+      <a href="#" data-goto="library">Библиотека</a>
+      <a href="#" data-goto="contact">Контакты</a>
+    </div>
+    <div class="foot-copy">© 2026 LUMEN. Все права защищены.</div>
+  </footer>
+</div><!-- /page-library -->
 
-            <!-- Preview Section -->
-            <section id="preview" class="preview-section">
-                <div class="preview-container">
-                    <div class="preview-header">
-                        <h2 class="preview-title">LIVE PREVIEW</h2>
-                        <p class="preview-subtitle">Посмотри нашу систему в действии</p>
-                    </div>
-                    <div class="preview-window">
-                        <div class="preview-terminal-header">
-                            <div class="preview-dot preview-dot-red"></div>
-                            <div class="preview-dot preview-dot-yellow"></div>
-                            <div class="preview-dot preview-dot-green"></div>
-                        </div>
-                        <video autoplay loop muted playsinline class="preview-video">
-                            <source src="https://eaglescript.space/static/media/preview.651c2ae5bc752ecf2cc5.mp4" type="video/mp4" />
-                        </video>
-                    </div>
-                </div>
-            </section>
+<!-- ════ PAGE: INJECTOR ════ -->
+<div class="page" id="page-injector">
+  <section class="section" style="min-height:100vh;padding-top:140px;">
+    <div class="sec-center">
+      <div class="sec-top">
+        <span class="sec-tag">ИНСТРУМЕНТЫ</span>
+        <h2 class="sec-h">INJECTOR</h2>
+        <p class="sec-p">Бесплатные инжекторы для загрузки DLL в игровые процессы</p>
+      </div>
+      
+      <div class="lib-grid">
+        <div class="lib-card reveal">
+          <div class="lib-header">
+            <div class="lib-game">EXTREME INJECTOR</div>
+            <div class="lib-badge free">БЕСПЛАТНО</div>
+          </div>
+          <div class="lib-desc">Популярный DLL инжектор с множеством методов инъекции. Поддержка x86 и x64.</div>
+          <div class="lib-meta">
+            <div class="lib-meta-item">🔧 Инжектор</div>
+            <div class="lib-meta-item">🔓 Public</div>
+          </div>
+          <a href="https://release-assets.githubusercontent.com/github-production-release-asset/88216229/2ba14480-e2c3-11e9-9201-2f38e5c776f3?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-05-15T15%3A08%3A48Z&rscd=attachment%3B+filename%3DExtreme.Injector.v3.7.3.-.by.master131.rar&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-05-15T14%3A08%3A46Z&ske=2026-05-15T15%3A08%3A48Z&sks=b&skv=2018-11-09&sig=2zTA2wlconBrVTnQhpmUvYjVn99RAWiP6iWa3JX%2BuvU%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc3ODg1NDg5MSwibmJmIjoxNzc4ODU0NTkxLCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.ZnAIIEouOTeepiLMJlxvYftY02zGW36oIuF9aLGUwrE&response-content-disposition=attachment%3B%20filename%3DExtreme.Injector.v3.7.3.-.by.master131.rar&response-content-type=application%2Foctet-stream" target="_blank" class="lib-btn">СКАЧАТЬ</a>
+        </div>
 
-            <!-- Features Section -->
-            <section id="features" class="features-section">
-                <h2 class="section-h2">ПЕРЕДОВЫЕ ВОЗМОЖНОСТИ</h2>
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <h3>⚡ Мгновенный отклик</h3>
-                        <p>Минимальная задержка 0.04ms обеспечивает мгновенную реакцию. Каждое движение обрабатывается быстрее, чем вы моргнете.</p>
-                    </div>
-                    <div class="feature-card">
-                        <h3>🛡️ Полная защита</h3>
-                        <p>Многоуровневая система обхода античитов. Регулярные обновления гарантируют 100% невидимость и безопасность.</p>
-                    </div>
-                    <div class="feature-card">
-                        <h3>🎯 Pixel-perfect точность</h3>
-                        <p>Каждая пуля летит именно туда, куда нужно. Продвинутые алгоритмы компенсации отдачи для всех типов оружия.</p>
-                    </div>
-                    <div class="feature-card">
-                        <h3>⚙️ Гибкая настройка</h3>
-                        <p>Полная кастомизация под ваш стиль игры. Индивидуальные профили для каждого оружия и ситуации.</p>
-                    </div>
-                    <div class="feature-card">
-                        <h3>☁️ Облачная синхронизация</h3>
-                        <p>Ваши настройки всегда с вами. Автоматическое сохранение и синхронизация между устройствами.</p>
-                    </div>
-                    <div class="feature-card">
-                        <h3>🔄 Частые обновления</h3>
-                        <p>Постоянное совершенствование и адаптация к изменениям игры. Новые функции каждую неделю.</p>
-                    </div>
-                </div>
-            </section>
+        <div class="lib-card reveal d1">
+          <div class="lib-header">
+            <div class="lib-game">LUNAR INJECTOR</div>
+            <div class="lib-badge free">БЕСПЛАТНО</div>
+          </div>
+          <div class="lib-desc">Легкий и быстрый инжектор с простым интерфейсом для новичков.</div>
+          <div class="lib-meta">
+            <div class="lib-meta-item">🔧 Инжектор</div>
+            <div class="lib-meta-item">🔓 Public</div>
+          </div>
+          <a href="https://release-assets.githubusercontent.com/github-production-release-asset/309200819/15ac4300-1c7e-11eb-8194-ee2767e8fc92?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-05-15T15%3A06%3A29Z&rscd=attachment%3B+filename%3DLunarInjector.zip&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-05-15T14%3A06%3A00Z&ske=2026-05-15T15%3A06%3A29Z&sks=b&skv=2018-11-09&sig=LeuvYQ6mMbICWmfnI5REnP0PA5kbooPvhKQkDLi195E%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc3ODg1NDY4MCwibmJmIjoxNzc4ODU0MzgwLCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.7NcNgGsUGBkKAYYV9vMTTodMdhQUB_4X2l1_RhCd23I&response-content-disposition=attachment%3B%20filename%3DLunarInjector.zip&response-content-type=application%2Foctet-stream" target="_blank" class="lib-btn">СКАЧАТЬ</a>
+        </div>
+      </div>
 
-            <!-- Payment Section -->
-            <section class="payment-section">
-                <div class="payment-container">
-                    <h2 class="payment-title">СПОСОБЫ ОПЛАТЫ</h2>
-                    <div class="payment-methods">
-                        <div class="payment-card">
-                            <div class="payment-icon">💳</div>
-                            <div class="payment-name">МИР</div>
-                            <div class="payment-desc">Русская платежная система</div>
-                        </div>
-                        <div class="payment-card">
-                            <div class="payment-icon">🏦</div>
-                            <div class="payment-name">СПБ</div>
-                            <div class="payment-desc">Российский банк</div>
-                        </div>
-                        <div class="payment-card">
-                            <div class="payment-icon">₿</div>
-                            <div class="payment-name">LITECOIN</div>
-                            <div class="payment-desc">Криптовалюта</div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </main>
+      <div style="margin-top:48px;text-align:center;">
+        <p style="color:#50507a;font-size:13px;line-height:1.8;max-width:700px;margin:0 auto 24px;">
+          ⚠️ Инжекторы могут быть обнаружены античитами. Используйте на свой страх и риск.
+        </p>
+        <a href="#" class="btn btn-ghost" data-goto="home">← НАЗАД</a>
+      </div>
+    </div>
+  </section>
 
-        <footer>
-            <p>&copy; 2026 LUMEN. Все права защищены. Используйте ответственно.</p>
-            <p style="margin-top: 12px; font-size: 12px;">Этот продукт предназначен только для образовательных целей.</p>
-        </footer>
+  <footer>
+    <div class="foot-logo">LUMEN</div>
+    <div class="foot-links">
+      <a href="#" data-goto="home">Главная</a>
+      <a href="#" data-goto="injector">Injector</a>
+      <a href="#" data-goto="executor">Executor</a>
+    </div>
+    <div class="foot-copy">© 2026 LUMEN. Все права защищены.</div>
+  </footer>
+</div><!-- /page-injector -->
+
+<!-- ════ PAGE: EXECUTOR ════ -->
+<div class="page" id="page-executor">
+  <section class="section" style="min-height:100vh;padding-top:140px;">
+    <div class="sec-center">
+      <div class="sec-top">
+        <span class="sec-tag">ИНСТРУМЕНТЫ</span>
+        <h2 class="sec-h">EXECUTOR</h2>
+        <p class="sec-p">Бесплатные экзекьюторы для выполнения скриптов в играх</p>
+      </div>
+      
+      <div class="lib-grid">
+        <div class="lib-card reveal">
+          <div class="lib-header">
+            <div class="lib-game">XENO</div>
+            <div class="lib-badge free">БЕСПЛАТНО</div>
+          </div>
+          <div class="lib-desc">Популярный Roblox экзекьютор с мощным функционалом и регулярными обновлениями.</div>
+          <div class="lib-meta">
+            <div class="lib-meta-item">⚡ Executor</div>
+            <div class="lib-meta-item">🎮 Roblox</div>
+          </div>
+          <a href="https://wrdcdn.net/r/214685/1778546580424/Xeno-v1.3.40.exe" target="_blank" class="lib-btn">СКАЧАТЬ</a>
+        </div>
+
+        <div class="lib-card reveal d1">
+          <div class="lib-header">
+            <div class="lib-game">DARK.SOLUTIONS</div>
+            <div class="lib-badge free">БЕСПЛАТНО</div>
+          </div>
+          <div class="lib-desc">Мощный экзекьютор с продвинутыми функциями и простой установкой через лоадер.</div>
+          <div class="lib-meta">
+            <div class="lib-meta-item">⚡ Executor</div>
+            <div class="lib-meta-item">🎮 Roblox</div>
+          </div>
+          <button class="lib-btn" onclick="openDarkModal()">СКАЧАТЬ</button>
+        </div>
+
+        <div class="lib-card reveal d2">
+          <div class="lib-header">
+            <div class="lib-game">LUNA</div>
+            <div class="lib-badge free">БЕСПЛАТНО</div>
+          </div>
+          <div class="lib-desc">Мощный бесплатный экзекьютор для Roblox с высокой скоростью выполнения.</div>
+          <div class="lib-meta">
+            <div class="lib-meta-item">⚡ Executor</div>
+            <div class="lib-meta-item">🎮 Roblox</div>
+          </div>
+          <a href="https://cdn.discordapp.com/attachments/1498155023207632896/1498156710194315405/Bootstrapper.exe?ex=6a07ddaa&is=6a068c2a&hm=d6ca81b6487f74ee5d9e8e339c1b8c0dd782e9df770f43203259177801dc7ad8&" target="_blank" class="lib-btn">СКАЧАТЬ</a>
+        </div>
+
+        <div class="lib-card reveal">
+          <div class="lib-header">
+            <div class="lib-game">SOLARA</div>
+            <div class="lib-badge free">БЕСПЛАТНО</div>
+          </div>
+          <div class="lib-desc">Надежный экзекьютор с регулярными обновлениями и поддержкой большинства скриптов.</div>
+          <div class="lib-meta">
+            <div class="lib-meta-item">⚡ Executor</div>
+            <div class="lib-meta-item">🎮 Roblox</div>
+          </div>
+          <a href="https://getsolara.dev/download/static/files/BootstrapperNew.exe" target="_blank" class="lib-btn">СКАЧАТЬ</a>
+        </div>
+
+
+      </div>
+
+      <div style="margin-top:48px;text-align:center;">
+        <p style="color:#50507a;font-size:13px;line-height:1.8;max-width:700px;margin:0 auto 24px;">
+          ⚠️ Использование экзекьюторов может привести к бану аккаунта. Мы не несём ответственности.
+        </p>
+        <a href="#" class="btn btn-ghost" data-goto="home">← НАЗАД</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="foot-logo">LUMEN</div>
+    <div class="foot-links">
+      <a href="#" data-goto="home">Главная</a>
+      <a href="#" data-goto="injector">Injector</a>
+      <a href="#" data-goto="executor">Executor</a>
+    </div>
+    <div class="foot-copy">© 2026 LUMEN. Все права защищены.</div>
+  </footer>
+</div><!-- /page-executor -->
+
+<!-- MODAL: DARK.SOLUTIONS INSTRUCTION -->
+<div class="modal" id="darkModal">
+  <div class="modal-content">
+    <div class="modal-close" onclick="closeDarkModal()">✕</div>
+    <h2 class="modal-title">ИНСТРУКЦИЯ ПО ЗАПУСКУ DARK.SOLUTIONS</h2>
+    
+    <div class="modal-section">
+      <h3>🇷🇺 РУССКАЯ ВЕРСИЯ</h3>
+      <ol>
+        <li>Скачай лоадер с сайта</li>
+        <li>Отключи антивирус</li>
+        <li>Создай новую папку, туда закинь <strong>DSLoader.exe</strong></li>
+        <li>Запусти <strong>DSLoader.exe</strong></li>
+        <li>Выбери билд <strong>Internal или External</strong></li>
+        <li>После установки → <strong>Start, выбираешь какой билд запустить</strong></li>
+        <li>Ожидайте запуска</li>
+        <li>Готово, можно играть</li>
+      </ol>
     </div>
 
-    <script>
-        // Loading
-        setTimeout(() => {
-            document.getElementById('loading').style.display = 'none';
-        }, 2000);
+    <div class="modal-section">
+      <h3>🇺🇸 ENGLISH VERSION</h3>
+      <ol>
+        <li>Download the loader from the official website.</li>
+        <li>Disable your antivirus software.</li>
+        <li>Create a new folder and move <strong>DSLoader.exe</strong> into it.</li>
+        <li>Run <strong>DSLoader.exe</strong>.</li>
+        <li>Select your preferred build: <strong>Internal</strong> or <strong>External</strong>.</li>
+        <li>After installation, click <strong>Start</strong> and choose the build you want to launch.</li>
+        <li>Wait for the injector to initialize.</li>
+        <li>Done — you're ready to play.</li>
+      </ol>
+    </div>
 
-        // Create stars
-        const starsContainer = document.getElementById('stars');
-        for (let i = 0; i < 50; i++) {
-            const angle = (i / 50) * Math.PI * 2;
-            const distance = 80 + Math.random() * 40;
-            const x = Math.cos(angle) * distance;
-            const y = Math.sin(angle) * distance;
-            const star = document.createElement('div');
-            star.className = 'star';
-            star.textContent = '★';
-            star.style.setProperty('--delay', `${i * 0.03}s`);
-            star.style.left = `calc(50% + ${x}px)`;
-            star.style.top = `calc(50% + ${y}px)`;
-            starsContainer.appendChild(star);
-        }
+    <a href="https://release-assets.githubusercontent.com/github-production-release-asset/1167666449/185055df-0868-4ec1-89c9-f3a1bbf64e24?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-05-15T14%3A42%3A51Z&rscd=attachment%3B+filename%3DDSLoader.exe&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-05-15T13%3A42%3A32Z&ske=2026-05-15T14%3A42%3A51Z&sks=b&skv=2018-11-09&sig=wRYCBF25r2JpPcOpIVGpX%2FMXd5sOJk4fMpJa6jjo3I8%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc3ODg1MzUzOCwibmJmIjoxNzc4ODUzMjM4LCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.JkUNvVxCQqR9XpFrtfpItSUJtnGaBgWohwRSPeXtxVA&response-content-disposition=attachment%3B%20filename%3DDSLoader.exe&response-content-type=application%2Foctet-stream" target="_blank" class="modal-download">
+      СКАЧАТЬ DSLOADER.EXE
+    </a>
+  </div>
+</div>
 
-        // Cursor
-        const cursor = document.getElementById('cursor');
-        const orb = document.getElementById('orb');
+<!-- MODAL: CS2 CHEAT PACK -->
+<div class="modal" id="cs2Modal">
+  <div class="modal-content">
+    <div class="modal-close" onclick="closeCS2Pack()">✕</div>
+    <h2 class="modal-title">CS2 CHEAT PACK</h2>
+    <p style="color:#5a5a80;font-size:13px;margin-bottom:24px;">Выберите чит для Counter-Strike 2</p>
+    
+    <div class="pack-list">
+      <div class="pack-item">
+        <div class="pack-name">OSIRIS CS2</div>
+        <div class="pack-desc">Популярный open-source чит с ESP, Aimbot, Triggerbot и визуалами.</div>
+        <div class="pack-features">
+          <div class="pack-tag">ESP</div>
+          <div class="pack-tag">AIMBOT</div>
+          <div class="pack-tag">TRIGGERBOT</div>
+          <div class="pack-tag">ВИЗУАЛЫ</div>
+        </div>
+        <a href="#" target="_blank" class="pack-btn">СКАЧАТЬ</a>
+      </div>
 
-        document.addEventListener('mousemove', (e) => {
-            cursor.style.left = (e.clientX - 6) + 'px';
-            cursor.style.top = (e.clientY - 6) + 'px';
-            orb.style.left = (e.clientX - 450) + 'px';
-            orb.style.top = (e.clientY - 450) + 'px';
-        });
+      <div class="pack-item">
+        <div class="pack-name">INTERNALFAKELAG</div>
+        <div class="pack-desc">Чит с фокусом на легит-функциях, визуалах и настройке Fakelag.</div>
+        <div class="pack-features">
+          <div class="pack-tag">ЛЕГИТ</div>
+          <div class="pack-tag">ESP</div>
+          <div class="pack-tag">FAKELAG</div>
+          <div class="pack-tag">RADAR</div>
+        </div>
+        <a href="#" target="_blank" class="pack-btn">СКАЧАТЬ</a>
+      </div>
 
-        // Island menu
-        const island = document.getElementById('island');
-        let islandExpanded = false;
+      <div class="pack-item">
+        <div class="pack-name">CS2 SIMPLE</div>
+        <div class="pack-desc">Простой и стабильный чит с базовыми функциями для новичков.</div>
+        <div class="pack-features">
+          <div class="pack-tag">ESP</div>
+          <div class="pack-tag">AIMBOT</div>
+          <div class="pack-tag">BHOP</div>
+        </div>
+        <a href="#" target="_blank" class="pack-btn">СКАЧАТЬ</a>
+      </div>
 
-        island.addEventListener('click', () => {
-            islandExpanded = !islandExpanded;
-            const content = island.querySelector('.dynamic-island-content');
-            
-            if (islandExpanded) {
-                island.classList.add('expanded');
-                content.innerHTML = `
-                    <div class="island-menu">
-                        <a href="#" class="island-link">ГЛАВНАЯ</a>
-                        <a href="#features" class="island-link">ФУНКЦИИ</a>
-                        <a href="#preview" class="island-link">PREVIEW</a>
-                        <a href="https://funpay.com" target="_blank" class="island-link island-buy">КУПИТЬ</a>
-                        <a href="https://discord.gg" target="_blank" class="island-link">DISCORD</a>
-                    </div>
-                `;
-            } else {
-                island.classList.remove('expanded');
-                content.innerHTML = `
-                    <span class="dynamic-island-text">LUMEN</span>
-                    <div class="dynamic-island-indicator"></div>
-                `;
-            }
-        });
+      <div class="pack-item">
+        <div class="pack-name">NEVERLOSE LITE</div>
+        <div class="pack-desc">Облегченная версия популярного чита с продвинутыми настройками.</div>
+        <div class="pack-features">
+          <div class="pack-tag">RAGEBOT</div>
+          <div class="pack-tag">ESP</div>
+          <div class="pack-tag">АНТИАИМ</div>
+          <div class="pack-tag">RESOLVER</div>
+        </div>
+        <a href="#" target="_blank" class="pack-btn">СКАЧАТЬ</a>
+      </div>
 
-        // Smooth scroll
-        document.querySelectorAll('a[href^="#"]').forEach(link => {
-            link.addEventListener('click', (e) => {
-                const href = link.getAttribute('href');
-                if (href !== '#') {
-                    e.preventDefault();
-                    const target = document.querySelector(href);
-                    if (target) {
-                        target.scrollIntoView({ behavior: 'smooth' });
-                        if (islandExpanded) {
-                            islandExpanded = false;
-                            island.classList.remove('expanded');
-                            const content = island.querySelector('.dynamic-island-content');
-                            content.innerHTML = `
-                                <span class="dynamic-island-text">LUMEN</span>
-                                <div class="dynamic-island-indicator"></div>
-                            `;
-                        }
-                    }
-                }
-            });
-        });
+      <div class="pack-item">
+        <div class="pack-name">GAMESENSE CRACK</div>
+        <div class="pack-desc">Взломанная версия премиум чита с полным функционалом.</div>
+        <div class="pack-features">
+          <div class="pack-tag">PREMIUM</div>
+          <div class="pack-tag">AIMBOT</div>
+          <div class="pack-tag">ВИЗУАЛЫ</div>
+          <div class="pack-tag">LUA</div>
+        </div>
+        <a href="#" target="_blank" class="pack-btn">СКАЧАТЬ</a>
+      </div>
+    </div>
 
-        // Cursor on hover
-        const buttons = document.querySelectorAll('a, button, .btn');
-        buttons.forEach(btn => {
-            btn.addEventListener('mouseenter', () => {
-                cursor.style.transform = 'scale(1.3)';
-            });
-            btn.addEventListener('mouseleave', () => {
-                cursor.style.transform = 'scale(1)';
-            });
-        });
+    <p style="color:#ef4444;font-size:12px;margin-top:24px;text-align:center;">
+      ⚠️ Используйте на свой страх и риск. Мы не несём ответственности за баны.
+    </p>
+  </div>
+</div>
 
-        // Header scroll
-        const header = document.getElementById('header');
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 100) {
-                header.style.background = 'rgba(10,10,15,0.95)';
-            } else {
-                header.style.background = 'rgba(10,10,15,0.7)';
-            }
-        });
+<!-- MODAL: RUST CHEAT PACK -->
+<div class="modal" id="rustModal">
+  <div class="modal-content">
+    <div class="modal-close" onclick="closeRustPack()">✕</div>
+    <h2 class="modal-title">RUST CHEAT PACK</h2>
+    <p style="color:#5a5a80;font-size:13px;margin-bottom:24px;">Выберите чит для Rust</p>
+    
+    <div class="pack-list">
+      <div class="pack-item">
+        <div class="pack-name">RUST RECOIL MACRO</div>
+        <div class="pack-desc">Макрос для полного контроля отдачи AK-47, LR300, MP5 и других оружий.</div>
+        <div class="pack-features">
+          <div class="pack-tag">AK-47</div>
+          <div class="pack-tag">LR300</div>
+          <div class="pack-tag">MP5</div>
+          <div class="pack-tag">МАКРОС</div>
+        </div>
+        <a href="#" target="_blank" class="pack-btn">СКАЧАТЬ</a>
+      </div>
 
-        // Animation on scroll
-        const cards = document.querySelectorAll('.feature-card, .stat-card, .payment-card');
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0)';
-                }
-            });
-        }, { threshold: 0.1 });
+      <div class="pack-item">
+        <div class="pack-name">BLOODHUNT EXTERNAL</div>
+        <div class="pack-desc">External чит с ESP, радаром и визуализацией игроков и предметов.</div>
+        <div class="pack-features">
+          <div class="pack-tag">ESP</div>
+          <div class="pack-tag">RADAR</div>
+          <div class="pack-tag">AIMBOT</div>
+        </div>
+        <a href="#" target="_blank" class="pack-btn">СКАЧАТЬ</a>
+      </div>
 
-        cards.forEach(card => {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(30px)';
-            card.style.transition = 'all 0.6s ease';
-            observer.observe(card);
-        });
-    </script>
+      <div class="pack-item">
+        <div class="pack-name">RUST SIMPLE MACRO</div>
+        <div class="pack-desc">Простой макрос для новичков с базовым контролем отдачи.</div>
+        <div class="pack-features">
+          <div class="pack-tag">AK-47</div>
+          <div class="pack-tag">ПРОСТОЙ</div>
+        </div>
+        <a href="#" target="_blank" class="pack-btn">СКАЧАТЬ</a>
+      </div>
+    </div>
+
+    <p style="color:#ef4444;font-size:12px;margin-top:24px;text-align:center;">
+      ⚠️ Используйте на свой страх и риск. Мы не несём ответственности за баны.
+    </p>
+  </div>
+</div>
+
+<!-- MODAL: MINECRAFT CHEAT PACK -->
+<div class="modal" id="minecraftModal">
+  <div class="modal-content">
+    <div class="modal-close" onclick="closeMinecraftPack()">✕</div>
+    <h2 class="modal-title">MINECRAFT CHEAT PACK</h2>
+    <p style="color:#5a5a80;font-size:13px;margin-bottom:24px;">Выберите чит для Minecraft</p>
+    
+    <div class="pack-list">
+      <div class="pack-item">
+        <div class="pack-name">WURST CLIENT</div>
+        <div class="pack-desc">Популярный чит-клиент с X-Ray, Fly, Kill Aura и другими функциями.</div>
+        <div class="pack-features">
+          <div class="pack-tag">X-RAY</div>
+          <div class="pack-tag">FLY</div>
+          <div class="pack-tag">KILL AURA</div>
+          <div class="pack-tag">ESP</div>
+        </div>
+        <a href="#" target="_blank" class="pack-btn">СКАЧАТЬ</a>
+      </div>
+
+      <div class="pack-item">
+        <div class="pack-name">METEOR CLIENT</div>
+        <div class="pack-desc">Современный чит для Fabric с множеством модулей и настроек.</div>
+        <div class="pack-features">
+          <div class="pack-tag">FABRIC</div>
+          <div class="pack-tag">BARITONE</div>
+          <div class="pack-tag">ESP</div>
+          <div class="pack-tag">АВТОМАТИЗАЦИЯ</div>
+        </div>
+        <a href="#" target="_blank" class="pack-btn">СКАЧАТЬ</a>
+      </div>
+
+      <div class="pack-item">
+        <div class="pack-name">SIGMA CLIENT</div>
+        <div class="pack-desc">Легкий чит-клиент для PvP с килл-аурой и визуалами.</div>
+        <div class="pack-features">
+          <div class="pack-tag">KILL AURA</div>
+          <div class="pack-tag">ESP</div>
+          <div class="pack-tag">VELOCITY</div>
+        </div>
+        <a href="#" target="_blank" class="pack-btn">СКАЧАТЬ</a>
+      </div>
+
+      <div class="pack-item">
+        <div class="pack-name">LIQUID BOUNCE</div>
+        <div class="pack-desc">Мощный чит с огромным количеством модулей и скриптов.</div>
+        <div class="pack-features">
+          <div class="pack-tag">SCRIPTS</div>
+          <div class="pack-tag">KILL AURA</div>
+          <div class="pack-tag">FLY</div>
+          <div class="pack-tag">BYPASS</div>
+        </div>
+        <a href="#" target="_blank" class="pack-btn">СКАЧАТЬ</a>
+      </div>
+
+      <div class="pack-item">
+        <div class="pack-name">ARISTOIS CLIENT</div>
+        <div class="pack-desc">Легит-читы с дополнительными утилитами для выживания.</div>
+        <div class="pack-features">
+          <div class="pack-tag">ЛЕГИТ</div>
+          <div class="pack-tag">X-RAY</div>
+          <div class="pack-tag">УТИЛИТЫ</div>
+        </div>
+        <a href="#" target="_blank" class="pack-btn">СКАЧАТЬ</a>
+      </div>
+
+      <div class="pack-item">
+        <div class="pack-name">PREMIUM HACK CLIENT</div>
+        <div class="pack-desc">Премиум чит-клиент с расширенными функциями для доминирования на серверах.</div>
+        <div class="pack-features">
+          <div class="pack-tag">PREMIUM</div>
+          <div class="pack-tag">KILLAURA</div>
+          <div class="pack-tag">FLY</div>
+          <div class="pack-tag">XRAY</div>
+        </div>
+        <a href="https://f54.workupload.com/download/eWQAwStgBAe" target="_blank" class="pack-btn">СКАЧАТЬ</a>
+      </div>
+
+      <div class="pack-item">
+        <div class="pack-name">ADVANCED MOD PACK</div>
+        <div class="pack-desc">Продвинутый набор модов с автоматизацией и визуальными улучшениями.</div>
+        <div class="pack-features">
+          <div class="pack-tag">MODS</div>
+          <div class="pack-tag">AUTO</div>
+          <div class="pack-tag">VISUAL</div>
+          <div class="pack-tag">ESP</div>
+        </div>
+        <a href="https://f93.workupload.com/download/ut82RjKAfzp" target="_blank" class="pack-btn">СКАЧАТЬ</a>
+      </div>
+    </div>
+
+    <p style="color:#ef4444;font-size:12px;margin-top:24px;text-align:center;">
+      ⚠️ Используйте на свой страх и риск. Мы не несём ответственности за баны.
+    </p>
+  </div>
+</div>
+
+<!-- MODAL: DDNET CHEAT PACK -->
+<div class="modal" id="ddnetModal">
+  <div class="modal-content">
+    <div class="modal-close" onclick="closeDDNetPack()">✕</div>
+    <h2 class="modal-title">DDNET CHEAT PACK</h2>
+    <p style="color:#5a5a80;font-size:13px;margin-bottom:24px;">Выберите клиент для DDraceNetwork</p>
+    
+    <div class="pack-list">
+      <div class="pack-item">
+        <div class="pack-name">SOUP CLIENT 1.0.1 FREE</div>
+        <div class="pack-desc">Бесплатный модифицированный клиент с расширенными функциями и улучшениями интерфейса.</div>
+        <div class="pack-features">
+          <div class="pack-tag">FREE</div>
+          <div class="pack-tag">MOD CLIENT</div>
+          <div class="pack-tag">UI</div>
+          <div class="pack-tag">FEATURES</div>
+        </div>
+        <a href="https://drive.usercontent.google.com/download?id=1ol3-0vZ-iQDfV7n1bGIvmu8MQfMO9mxI&export=download&authuser=0&confirm=t&uuid=65b3581b-d779-4c2a-b3a9-4c6766c51043&at=ALBwUgmk5c6UHgwXUIMpjXzjag9m%3A1778862633152" target="_blank" class="pack-btn">СКАЧАТЬ</a>
+      </div>
+
+      <div class="pack-item">
+        <div class="pack-name">MRX CLIENT</div>
+        <div class="pack-desc">Продвинутый клиент с дополнительными возможностями для улучшения игрового процесса.</div>
+        <div class="pack-features">
+          <div class="pack-tag">ADVANCED</div>
+          <div class="pack-tag">MOD CLIENT</div>
+          <div class="pack-tag">CUSTOM</div>
+          <div class="pack-tag">TOOLS</div>
+        </div>
+        <a href="https://drive.usercontent.google.com/download?id=12gKIkI7XXIhgmpNRsxM9-74HrIx1aT5k&export=download&authuser=0&confirm=t&uuid=09297ef2-3e92-4ead-a2a4-fae8fad985f9&at=ALBwUgk2JUxZHeX8IqOSxdh-HG3U%3A1778861550676" target="_blank" class="pack-btn">СКАЧАТЬ</a>
+      </div>
+
+      <div class="pack-item">
+        <div class="pack-name">BEST CLIENT</div>
+        <div class="pack-desc">Лучший модифицированный клиент с полным набором функций для профессиональной игры.</div>
+        <div class="pack-features">
+          <div class="pack-tag">PREMIUM</div>
+          <div class="pack-tag">FULL PACK</div>
+          <div class="pack-tag">PRO</div>
+          <div class="pack-tag">OPTIMIZED</div>
+        </div>
+        <a href="https://release-assets.githubusercontent.com/github-production-release-asset/1186244406/856c95e9-d7a0-4e45-9e35-df3d70fe5841?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-05-15T17%3A07%3A14Z&rscd=attachment%3B+filename%3Dbestclient.zip&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-05-15T16%3A06%3A34Z&ske=2026-05-15T17%3A07%3A14Z&sks=b&skv=2018-11-09&sig=8clOXylNNQg7Nk%2BZsbLmmVH5OIZDNSDidAXwdP33Gjs%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc3ODg2Mjk5NCwibmJmIjoxNzc4ODYxMTk0LCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.fzw6YdZ4JYjDvtAhjHNU8bIJdZ0N-ep_THzFkKEsid4&response-content-disposition=attachment%3B%20filename%3Dbestclient.zip&response-content-type=application%2Foctet-stream" target="_blank" class="pack-btn">СКАЧАТЬ</a>
+      </div>
+    </div>
+
+    <p style="color:#ef4444;font-size:12px;margin-top:24px;text-align:center;">
+      ⚠️ Используйте на свой страх и риск. Мы не несём ответственности за баны.
+    </p>
+  </div>
+</div>
+
+<script>
+/* ── LOADING ── */
+(function(){
+  let p=0;
+  const fill=document.getElementById('ldFill');
+  const pct=document.getElementById('ldPct');
+  const scr=document.getElementById('loading');
+  const iv=setInterval(()=>{
+    p=Math.min(p+Math.random()*18+6,100);
+    fill.style.width=p+'%';
+    pct.textContent=Math.floor(p)+'%';
+    if(p>=100){
+      clearInterval(iv);
+      setTimeout(()=>{
+        scr.classList.add('out');
+        setTimeout(()=>scr.remove(),600);
+      },280);
+    }
+  },65);
+})();
+
+/* ── STAR CANVAS ── */
+const canvas=document.getElementById('starCanvas');
+const ctx=canvas.getContext('2d');
+let stars=[];
+function resize(){
+  canvas.width=window.innerWidth;
+  canvas.height=window.innerHeight;
+  initStars();
+}
+function initStars(){
+  stars=[];
+  const n=Math.floor((canvas.width*canvas.height)/8000);
+  for(let i=0;i<n;i++){
+    stars.push({
+      x:Math.random()*canvas.width,
+      y:Math.random()*canvas.height,
+      r:Math.random()*1.1+0.15,
+      a:Math.random(),
+      speed:Math.random()*0.004+0.001,
+      phase:Math.random()*Math.PI*2,
+      color:Math.random()>.85?'rgba(139,92,246,':'rgba(255,255,255,'
+    });
+  }
+}
+function drawStars(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const t=Date.now()*0.001;
+  stars.forEach(s=>{
+    const a=0.15+0.55*Math.abs(Math.sin(t*s.speed+s.phase));
+    ctx.beginPath();
+    ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    ctx.fillStyle=s.color+a+')';
+    ctx.fill();
+  });
+  requestAnimationFrame(drawStars);
+}
+window.addEventListener('resize',resize);
+resize();
+drawStars();
+
+/* ── CURSOR ── */
+const dot=document.getElementById('cur-dot');
+const ring=document.getElementById('cur-ring');
+let mx=-300,my=-300,rx=-300,ry=-300;
+document.addEventListener('mousemove',e=>{
+  mx=e.clientX;my=e.clientY;
+  dot.style.left=mx+'px';dot.style.top=my+'px';
+});
+(function loop(){
+  rx+=(mx-rx)*.12;ry+=(my-ry)*.12;
+  ring.style.left=rx+'px';ring.style.top=ry+'px';
+  requestAnimationFrame(loop);
+})();
+function addHover(sel){
+  document.querySelectorAll(sel).forEach(el=>{
+    el.addEventListener('mouseenter',()=>document.body.classList.add('hov'));
+    el.addEventListener('mouseleave',()=>document.body.classList.remove('hov'));
+  });
+}
+addHover('a,button,.f-card,.s-card,.contact-card,.faq-q,.prev-wrap,.prev-info-card,.bot-gif-frame,.about-content');
+
+/* ── ORB ── */
+const orb=document.getElementById('orb');
+document.addEventListener('mousemove',e=>{
+  orb.style.left=(e.clientX-300)+'px';
+  orb.style.top=(e.clientY-300)+'px';
+});
+
+/* ── HEADER SCROLL ── */
+const hdr=document.getElementById('hdr');
+window.addEventListener('scroll',()=>{
+  hdr.classList.toggle('scrolled',window.scrollY>50);
+});
+
+/* ── PAGE ROUTING ── */
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const pg=document.getElementById('page-'+id);
+  if(pg){
+    pg.classList.add('active');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  // update nav active state
+  document.querySelectorAll('.nav-link').forEach(a=>{
+    a.classList.toggle('active',a.dataset.goto===id);
+  });
+  // re-observe reveals on new page
+  setTimeout(observeReveals,100);
+}
+
+document.addEventListener('click',e=>{
+  const a=e.target.closest('[data-goto]');
+  if(!a)return;
+  const goto=a.dataset.goto;
+  if(!goto)return;
+  e.preventDefault();
+  showPage(goto);
+});
+
+/* ── REVEAL ── */
+let ro;
+function observeReveals(){
+  if(ro)ro.disconnect();
+  ro=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');ro.unobserve(e.target);}});
+  },{threshold:0.1});
+  document.querySelectorAll('.page.active .reveal').forEach(el=>{
+    el.classList.remove('in');
+    ro.observe(el);
+  });
+}
+observeReveals();
+
+/* ── FAQ ── */
+document.addEventListener('click',e=>{
+  const q=e.target.closest('.faq-q');
+  if(!q)return;
+  const item=q.parentElement;
+  const was=item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(i=>i.classList.remove('open'));
+  if(!was)item.classList.add('open');
+});
+
+/* ── MODAL DARK.SOLUTIONS ── */
+function openDarkModal(){
+  document.getElementById('darkModal').classList.add('active');
+}
+function closeDarkModal(){
+  document.getElementById('darkModal').classList.remove('active');
+}
+// Close on outside click
+document.getElementById('darkModal')?.addEventListener('click',e=>{
+  if(e.target.id==='darkModal')closeDarkModal();
+});
+
+/* ── MODAL CS2 PACK ── */
+function openCS2Pack(){
+  document.getElementById('cs2Modal').classList.add('active');
+}
+function closeCS2Pack(){
+  document.getElementById('cs2Modal').classList.remove('active');
+}
+// Close on outside click
+document.getElementById('cs2Modal')?.addEventListener('click',e=>{
+  if(e.target.id==='cs2Modal')closeCS2Pack();
+});
+
+/* ── MODAL RUST PACK ── */
+function openRustPack(){
+  document.getElementById('rustModal').classList.add('active');
+}
+function closeRustPack(){
+  document.getElementById('rustModal').classList.remove('active');
+}
+// Close on outside click
+document.getElementById('rustModal')?.addEventListener('click',e=>{
+  if(e.target.id==='rustModal')closeRustPack();
+});
+
+/* ── MODAL MINECRAFT PACK ── */
+function openMinecraftPack(){
+  document.getElementById('minecraftModal').classList.add('active');
+}
+function closeMinecraftPack(){
+  document.getElementById('minecraftModal').classList.remove('active');
+}
+// Close on outside click
+document.getElementById('minecraftModal')?.addEventListener('click',e=>{
+  if(e.target.id==='minecraftModal')closeMinecraftPack();
+});
+
+/* ── MODAL DDNET PACK ── */
+function openDDNetPack(){
+  document.getElementById('ddnetModal').classList.add('active');
+}
+function closeDDNetPack(){
+  document.getElementById('ddnetModal').classList.remove('active');
+}
+// Close on outside click
+document.getElementById('ddnetModal')?.addEventListener('click',e=>{
+  if(e.target.id==='ddnetModal')closeDDNetPack();
+});
+
+// Close on Escape key
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    closeDarkModal();
+    closeCS2Pack();
+    closeRustPack();
+    closeMinecraftPack();
+    closeDDNetPack();
+  }
+});
+
+// Initialize Minecraft slider on page load
+let currentMinecraftSlide = 0;
+const minecraftSlider = document.getElementById('sliderMinecraft');
+
+if(minecraftSlider){
+  function updateMinecraftSlider(){
+    const images = minecraftSlider.querySelectorAll('img');
+    const container = minecraftSlider.parentElement;
+    const thumbs = container.querySelectorAll('.slider-thumb');
+    
+    images.forEach((img, index) => {
+      img.style.display = index === currentMinecraftSlide ? 'block' : 'none';
+    });
+    
+    thumbs.forEach((thumb, index) => {
+      thumb.classList.toggle('active', index === currentMinecraftSlide);
+    });
+  }
+
+  window.nextMinecraftSlide = function(){
+    const images = minecraftSlider.querySelectorAll('img');
+    currentMinecraftSlide = (currentMinecraftSlide + 1) % images.length;
+    updateMinecraftSlider();
+  };
+
+  window.prevMinecraftSlide = function(){
+    const images = minecraftSlider.querySelectorAll('img');
+    currentMinecraftSlide = (currentMinecraftSlide - 1 + images.length) % images.length;
+    updateMinecraftSlider();
+  };
+
+  window.goToMinecraftSlide = function(index){
+    currentMinecraftSlide = index;
+    updateMinecraftSlider();
+  };
+}
+
+// Initialize on DOM ready
+document.addEventListener('DOMContentLoaded',()=>{
+  observeReveals();
+});
+</script>
 </body>
 </html>
